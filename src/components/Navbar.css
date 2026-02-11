@@ -73,11 +73,36 @@
   gap: 1.5rem;
 }
 
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .user-email {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 .logout-btn {
@@ -106,6 +131,14 @@
   
   .navbar-brand span {
     font-size: 1.2rem;
+  }
+  
+  .navbar-user {
+    gap: 0.5rem;
+  }
+  
+  .nav-links {
+    display: none;
   }
   
   .auth-btn, .logout-btn {

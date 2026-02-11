@@ -23,8 +23,16 @@ const Navbar = ({ isLoggedIn, userEmail, handleLogout }) => {
         <div className="navbar-menu">
           {isLoggedIn ? (
             <div className="navbar-user">
+              <div className="nav-links">
+                <Link to="/dashboard" className="nav-link">
+                  <i className="fas fa-tachometer-alt"></i> Dashboard
+                </Link>
+                <Link to="/profile" className="nav-link">
+                  <i className="fas fa-user-circle"></i> Profile
+                </Link>
+              </div>
               <span className="user-email">
-                <i className="fas fa-user-circle"></i> {userEmail}
+                <i className="fas fa-user"></i> {userEmail}
               </span>
               <button onClick={handleLogoutClick} className="logout-btn">
                 <i className="fas fa-sign-out-alt"></i> Logout

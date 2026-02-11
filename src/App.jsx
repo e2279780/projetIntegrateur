@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
+import Profile from './components/Profile';
 import './App.css';
 
 function App() {
@@ -13,7 +14,7 @@ function App() {
   const handleLogin = (email) => {
     setIsLoggedIn(true);
     setUserEmail(email);
-    // Store in localStorage for persistence
+
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('userEmail', email);
   };
@@ -25,7 +26,7 @@ function App() {
     localStorage.removeItem('userEmail');
   };
 
-  // Check localStorage on initial load
+
   React.useEffect(() => {
     const storedLogin = localStorage.getItem('isLoggedIn');
     const storedEmail = localStorage.getItem('userEmail');
@@ -68,13 +69,21 @@ function App() {
                 isLoggedIn ? 
                 <Navigate to="/dashboard" /> : 
                 <Signup handleLogin={handleLogin} />
-              } 
+            } 
             />
             <Route 
               path="/dashboard" 
               element={
                 isLoggedIn ? 
                 <Dashboard userEmail={userEmail} /> : 
+                <Navigate to="/login" />
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                isLoggedIn ? 
+                <Profile userEmail={userEmail} /> : 
                 <Navigate to="/login" />
               } 
             />
