@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignOutAlt, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 // Import des composants
 import Navbar from './components/Navbar';
@@ -18,6 +18,8 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Frais from './pages/Frais';
 import Checkout from './pages/Checkout'; // Import de la page de paiement du panier
+import BookDetail from './pages/BookDetail'; // Page de détail d'un livre avec ElegantCarousel
+import InitBooks from './pages/InitBooks'; // Page d'initialisation de la base de données
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -140,6 +142,7 @@ export default function App() {
             {/* ROUTES PUBLIQUES */}
             <Route path="/" element={<Home isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
             <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
+            <Route path="/book/:bookId" element={<BookDetail />} />
             <Route path="/login" element={!isLoggedIn ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
             <Route path="/signup" element={!isLoggedIn ? <Signup onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
             
@@ -156,6 +159,13 @@ export default function App() {
             <Route path="/profile" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <Profile user={user} />
+              </ProtectedRoute>
+            } />
+
+            {/* Page d'initialisation de la base de données (Bibliothécaires) */}
+            <Route path="/init-books" element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <InitBooks />
               </ProtectedRoute>
             } />
 

@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // ============= COUVERTURES DE LIVRES =============
+    match /book-covers/{allPaths=**} {
+      // Tout le monde peut lire les couvertures
+      allow read: if request.auth != null;
+      
+      // Seul un bibliothécaire peut uploader/modifier/supprimer une couverture
+      allow write: if request.auth != null &&
+                      get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'Bibliothécaire' &&
+                      request.resource.contentType.matches('image/.*') &&
+                      request.resource.size < 5 * 1024 * 1024; // Max 5MB
+    }
+
+    // ============= PROTECTION PAR DÉFAUT =============
+    // Tous les autres chemins sont refusés
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

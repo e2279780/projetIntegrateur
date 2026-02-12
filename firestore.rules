@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============= FONCTIONS UTILES =============
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isLibrarian() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Bibliothécaire';
+    }
+
+    // ============= COLLECTION UTILISATEURS =============
+    match /users/{userId} {
+      // Chacun peut lire son propre profil et les profils publics
+      allow read: if isSignedIn();
+      
+      // Chacun peut créer son profil lors de l'inscription
+      allow create: if isSignedIn() && isOwner(userId);
+      
+      // Chacun peut mettre à jour son profil
+      allow update: if isSignedIn() && isOwner(userId);
+      
+      // Impossible de supprimer un profil (sécurité)
+      allow delete: if false;
+    }
+
+    // ============= COLLECTION LIVRES =============
+    match /books/{bookId} {
+      // Tout le monde peut lire les livres
+      allow read: if isSignedIn();
+      
+      // Seul un bibliothécaire peut créer un livre
+      allow create: if isSignedIn() && isLibrarian();
+      
+      // Seul un bibliothécaire peut modifier un livre
+      allow update: if isSignedIn() && isLibrarian();
+      
+      // Seul un bibliothécaire peut supprimer un livre
+      allow delete: if isSignedIn() && isLibrarian();
+    }
+
+    // ============= COLLECTION EMPRUNTS =============
+    match /borrows/{borrowId} {
+      // Chacun peut lire ses propres emprunts
+      allow read: if isSignedIn() && (
+        isOwner(resource.data.userId) || isLibrarian()
+      );
+      
+      // Chacun peut créer un emprunt pour lui-même
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      
+      // Chacun peut mettre à jour ses propres emprunts
+      allow update: if isSignedIn() && (
+        isOwner(resource.data.userId) || isLibrarian()
+      );
+      
+      // Seul un bibliothécaire peut supprimer un emprunt
+      allow delete: if isSignedIn() && isLibrarian();
+    }
+
+    // ============= PROTECTION PAR DÉFAUT =============
+    // Tout accès non spécifié est refusé
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
