@@ -1,20 +1,5 @@
-/**
- * SEED - Initialiser la base de données avec les livres de BiblioConnect
- * Ce fichier contient tous les livres du projet et une fonction pour les ajouter à Firestore
- */
-
-// Import explicitement le service de base de données pour éviter
-// l'import de répertoire (non supporté par Node ESM dans ce contexte)
-import * as databaseService from './services/databaseService.js';
-
-/**
- * ========================================
- * BASE DE DONNÉES COMPLÈTE DES LIVRES
- * ========================================
- */
-
+// Exporte uniquement les données statiques des livres (sans importer firebase)
 export const booksDatabase = [
-  // =================== DÉVELOPPEMENT (Informatique) ===================
   {
     title: "Clean Code",
     author: "Robert C. Martin",
@@ -90,8 +75,6 @@ export const booksDatabase = [
     coverImageUrl: "https://via.placeholder.com/300x400?text=Code+Complete",
     keywords: ["développement", "qualité", "construction", "logiciel"],
   },
-
-  // =================== FICTION ===================
   {
     title: "Le Seigneur des Anneaux",
     author: "J.R.R. Tolkien",
@@ -167,8 +150,6 @@ export const booksDatabase = [
     coverImageUrl: "https://via.placeholder.com/300x400?text=Le+Hobbit",
     keywords: ["fantasy", "aventure", "quête", "dragon"],
   },
-
-  // =================== HISTOIRE ===================
   {
     title: "Une brève histoire du temps",
     author: "Stephen Hawking",
@@ -214,8 +195,6 @@ export const booksDatabase = [
     coverImageUrl: "https://via.placeholder.com/300x400?text=Revolution+Francaise",
     keywords: ["histoire", "france", "révolution", "politique"],
   },
-
-  // =================== AFFAIRES & DÉVELOPPEMENT PERSONNEL ===================
   {
     title: "Pensées pour moi-même",
     author: "Marc Aurèle",
@@ -261,8 +240,6 @@ export const booksDatabase = [
     coverImageUrl: "https://via.placeholder.com/300x400?text=Loi+Attraction",
     keywords: ["développement", "mentalité", "attraction", "réussite"],
   },
-
-  // =================== SCIENCES & NATURE ===================
   {
     title: "Le monde de Sophie",
     author: "Jostein Gaarder",
@@ -293,8 +270,6 @@ export const booksDatabase = [
     coverImageUrl: "https://via.placeholder.com/300x400?text=Silence+Agneaux",
     keywords: ["thriller", "crime", "psychologie", "suspense"],
   },
-
-  // =================== JEUNESSE ===================
   {
     title: "Le Monde de Narnia",
     author: "C.S. Lewis",
@@ -327,153 +302,4 @@ export const booksDatabase = [
   },
 ];
 
-/**
- * ========================================
- * FONCTION POUR INITIALISER LES LIVRES
- * ========================================
- */
-
-/**
- * Ajouter tous les livres à Firestore
- * À utiliser UNE SEULE FOIS pour initialiser la base de données
- * 
- * @param {string} userRole - Rôle de l'utilisateur (doit être 'Bibliothécaire')
- * @returns {Promise<Object>} Résumé de l'opération
- */
-export const seedBooksToFirebase = async (userRole = 'Bibliothécaire') => {
-  try {
-    if (userRole !== 'Bibliothécaire') {
-      throw new Error('Seul un bibliothécaire peut ajouter des livres à la base de données.');
-    }
-
-    const results = {
-      success: [],
-      errors: [],
-      total: booksDatabase.length,
-      addedCount: 0,
-      errorCount: 0,
-    };
-
-    console.log(`📚 Début de l'ajout de ${booksDatabase.length} livres...`);
-
-    // Ajouter chaque livre
-    for (const book of booksDatabase) {
-      try {
-        const bookId = await databaseService.addBook(userRole, {
-          title: book.title,
-          author: book.author,
-          isbn: book.isbn,
-          category: book.category,
-          description: book.description || '',
-          pages: book.pages || 0,
-          rating: book.rating || 0,
-          coverImageUrl: book.coverImageUrl || '',
-          totalCopies: book.totalCopies || 1,
-          publisher: book.publisher || '',
-          yearPublished: book.yearPublished || new Date().getFullYear(),
-          language: book.language || 'Fr',
-          keywords: book.keywords || [],
-        });
-
-        results.success.push({
-          title: book.title,
-          id: bookId,
-          status: '✅ Ajouté',
-        });
-        results.addedCount++;
-
-        console.log(`✅ ${book.title} (ID: ${bookId})`);
-      } catch (error) {
-        results.errors.push({
-          title: book.title,
-          status: '❌ Erreur',
-          error: error.message,
-        });
-        results.errorCount++;
-
-        console.error(`❌ Erreur pour ${book.title}: ${error.message}`);
-      }
-    }
-
-    console.log('\n========================================');
-    console.log('📊 RÉSUMÉ DE L\'INITIALISATION');
-    console.log('========================================');
-    console.log(`Total de livres: ${results.total}`);
-    console.log(`✅ Ajoutés avec succès: ${results.addedCount}`);
-    console.log(`❌ Erreurs: ${results.errorCount}`);
-    console.log('========================================\n');
-
-    return results;
-  } catch (error) {
-    console.error('Erreur lors du seed:', error.message);
-    throw error;
-  }
-};
-
-/**
- * ========================================
- * FONCTION D'INITIALISATION ALTERNATIVE
- * ========================================
- */
-
-/**
- * Vérifier et initialiser les livres si la base est vide
- * Cette fonction vérifie d'abord si la base contient des livres
- * avant d'ajouter les données d'initialisation
- * 
- * @param {string} userRole - Rôle de l'utilisateur
- * @returns {Promise<Object>} Résumé de l'opération
- */
-export const initializeBooksIfEmpty = async (userRole = 'Bibliothécaire') => {
-  try {
-    // Vérifier si des livres existent déjà
-    const existingBooks = await databaseService.getAllBooks();
-
-    if (existingBooks && existingBooks.length > 0) {
-      console.log(`📚 Base de données déjà initialisée avec ${existingBooks.length} livres.`);
-      return {
-        status: 'already_initialized',
-        booksCount: existingBooks.length,
-        message: 'La base de données contient déjà des livres.',
-      };
-    }
-
-    // Base vide, initialiser les données
-    console.log('📚 Base de données vide. Initialisation en cours...');
-    return await seedBooksToFirebase(userRole);
-  } catch (error) {
-    console.error('Erreur lors de la vérification/initialisation:', error.message);
-    throw error;
-  }
-};
-
-/**
- * ========================================
- * EXPORT DES STATISTIQUES
- * ========================================
- */
-
-export const booksStats = {
-  total: booksDatabase.length,
-  categories: {
-    Développement: booksDatabase.filter(b => b.category === 'Développement').length,
-    Fantasy: booksDatabase.filter(b => b.category === 'Fantasy').length,
-    Classique: booksDatabase.filter(b => b.category === 'Classique').length,
-    Dystopie: booksDatabase.filter(b => b.category === 'Dystopie').length,
-    Sciences: booksDatabase.filter(b => b.category === 'Sciences').length,
-    Histoire: booksDatabase.filter(b => b.category === 'Histoire').length,
-    Philosophie: booksDatabase.filter(b => b.category === 'Philosophie').length,
-    'Développement Personnel': booksDatabase.filter(b => b.category === 'Développement Personnel').length,
-    Thriller: booksDatabase.filter(b => b.category === 'Thriller').length,
-    Jeunesse: booksDatabase.filter(b => b.category === 'Jeunesse').length,
-  },
-  totalCopies: booksDatabase.reduce((sum, book) => sum + (book.totalCopies || 1), 0),
-  averageRating: (booksDatabase.reduce((sum, book) => sum + (book.rating || 0), 0) / booksDatabase.length).toFixed(2),
-};
-
-export default {
-  seedBooksToFirebase,
-  initializeBooksIfEmpty,
-  booksDatabase,
-  booksStats,
-};
+export default booksDatabase;
