@@ -78,7 +78,8 @@ export const login = async (email, password) => {
     };
   } catch (error) {
     console.error('Erreur lors de la connexion:', error.message);
-    throw new Error('Email ou mot de passe incorrect');
+    // Renvoyer le message original si possible pour aider au débogage côté client
+    throw new Error(error.message || 'Email ou mot de passe incorrect');
   }
 };
 
