@@ -5,17 +5,17 @@ import {
   faCamera, faCheckCircle, faEnvelope, faPlus 
 } from '@fortawesome/free-solid-svg-icons';
 
+const SectionTitle = ({ icon, title }) => (
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-10 h-10 bg-blue-600/10 text-blue-600 rounded-xl flex items-center justify-center">
+      <FontAwesomeIcon icon={icon} />
+    </div>
+    <h2 className="text-xl font-black text-slate-800">{title}</h2>
+  </div>
+);
+
 export default function Profile({ user }) {
   const [activeTab, setActiveTab] = useState('infos');
-
-  const SectionTitle = ({ icon, title }) => (
-    <div className="flex items-center gap-3 mb-6">
-      <div className="w-10 h-10 bg-blue-600/10 text-blue-600 rounded-xl flex items-center justify-center">
-        <FontAwesomeIcon icon={icon} />
-      </div>
-      <h2 className="text-xl font-black text-slate-800">{title}</h2>
-    </div>
-  );
 
   return (
     <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8">

@@ -1,19 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faBoxOpen, faTruckLoading, faAlertTriangle, faPlusCircle, 
-  faChartLine, faHistory, faUsers, faBoxes 
+  faTruckLoading, faAlertTriangle, faPlusCircle, 
+  faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Admin() {
-  // Données simulées (À lier à Supabase plus tard)
-  const [inventory, setInventory] = useState([
-    { id: 1, title: "Clean Code", stock: 2, minStock: 5, provider: "Éditions Tech", format: "Physique" },
-    { id: 2, title: "Eloquent JavaScript", stock: 12, minStock: 5, provider: "Web Books", format: "Physique" },
-    { id: 3, title: "The Pragmatic Programmer", stock: 1, minStock: 3, provider: "Dev Media", format: "Physique" },
-  ]);
+import { useUser } from '../context/useUser';
 
-  const [providers] = useState(["Éditions Tech", "Web Books", "Dev Media", "Maisonneuve Lib"]);
+export default function Admin() {
+  useUser();
+
+  const [inventory, setInventory] = useState([]);
+  const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/books?page=1&limit=1000');
+      const json = await res.json();
+      const books = json.data || [];
+
+      const mapped = books.map(b => ({
+        id: b.id,
+        title: b.title || 'Untitled',
+        stock: b.availableCopies ?? b.totalCopies ?? 0,
+        minStock: Math.max(1, Math.floor((b.totalCopies || 1) * 0.15)),
+        provider: b.publisher || 'Inconnu',
+        format: b.format || 'Physique',
+      }));
+
+      setInventory(mapped);
+
+      const provs = Array.from(new Set(mapped.map(m => m.provider))).filter(Boolean);
+      setProviders(provs);
+    } catch (err) {
+      console.error('Erreur fetch inventory', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-10">
@@ -31,7 +61,7 @@ export default function Admin() {
             <FontAwesomeIcon icon={faChartLine} />
           </div>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Livres</p>
-          <p className="text-3xl font-black text-slate-900 italic">1,240</p>
+          <p className="text-3xl font-black text-slate-900 italic">{inventory.length}</p>
         </div>
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
@@ -59,9 +89,12 @@ export default function Admin() {
         <div className="flex-1 bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
             <h2 className="font-black text-xl uppercase italic">Inventaire des Stocks</h2>
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition">
-               <FontAwesomeIcon icon={faPlusCircle} /> Ajouter un livre
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={fetchInventory} className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-300 transition">Actualiser</button>
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition">
+                <FontAwesomeIcon icon={faPlusCircle} /> Ajouter un livre
+              </button>
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -76,30 +109,55 @@ export default function Admin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {inventory.map(item => (
-                  <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-8 py-6">
-                      <p className="font-black text-slate-800">{item.title}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">{item.provider}</p>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                        {item.format}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`font-black text-lg ${item.stock <= item.minStock ? 'text-red-500' : 'text-slate-800'}`}>
-                        {item.stock}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 font-bold text-slate-400">{item.minStock}</td>
-                    <td className="px-8 py-6">
-                       <button className="text-blue-600 font-black text-[10px] uppercase tracking-widest hover:underline">
-                         Réapprovisionner
-                       </button>
-                    </td>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="px-8 py-6 text-center">Chargement...</td>
                   </tr>
-                ))}
+                ) : (
+                  inventory.map(item => (
+                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-8 py-6">
+                        <p className="font-black text-slate-800">{item.title}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{item.provider}</p>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">{item.format}</span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className={`font-black text-lg ${item.stock <= item.minStock ? 'text-red-500' : 'text-slate-800'}`}>{item.stock}</span>
+                      </td>
+                      <td className="px-8 py-6 font-bold text-slate-400">{item.minStock}</td>
+                      <td className="px-8 py-6">
+                        <button
+                          onClick={async () => {
+                            const qtyStr = window.prompt('Quantité à ajouter (nombre positif)');
+                            if (!qtyStr) return;
+                            const qty = parseInt(qtyStr, 10);
+                            if (Number.isNaN(qty) || qty <= 0) return alert('Quantité invalide');
+
+                            try {
+                              const res = await fetch(`/api/books/${item.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ delta: qty }),
+                              });
+                              const json = await res.json();
+                              if (!res.ok) throw new Error(json.error || 'Erreur');
+                              await fetchInventory();
+                              alert('Stock mis à jour');
+                            } catch (err) {
+                              console.error(err);
+                              alert('Erreur lors de la mise à jour du stock: ' + err.message);
+                            }
+                          }}
+                          className="text-blue-600 font-black text-[10px] uppercase tracking-widest hover:underline"
+                        >
+                          Réapprovisionner
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

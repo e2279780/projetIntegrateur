@@ -1,5 +1,5 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '../firebase';
+import { storage } from '../firebase.js';
 
 /**
  * Uploader une image de couverture de livre
