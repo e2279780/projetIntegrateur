@@ -20,8 +20,8 @@ const SectionTitle = ({ icon, title }) => (
   </div>
 );
 
-export default function Dashboard({ user }) {
-  // --- SÉCURITÉ CRUCIALE : Empêche le crash si user est null au chargement ---
+export default function Dashboard({ user, role }) {
+  // Sécurité : Empêche le crash si user est null au chargement
   if (!user) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -31,6 +31,13 @@ export default function Dashboard({ user }) {
       </div>
     );
   }
+
+  // Construire le nom d'affichage à partir des données Firebase
+  const displayName = user?.firstName 
+    ? `${user.firstName} ${user.lastName || ''}`.trim() 
+    : user?.name || user?.email?.split('@')[0] || "Utilisateur";
+  
+  const initial = displayName.charAt(0).toUpperCase();
 
   const myEmprunts = [
     { 
@@ -72,15 +79,20 @@ export default function Dashboard({ user }) {
         <aside className="w-full lg:w-80 shrink-0 space-y-8">
           <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
             <div className="relative z-10 text-center">
-              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] border-4 border-slate-800 flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl italic">
-                {user?.name?.charAt(0).toUpperCase() || "U"}
+              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl">
+                {initial}
               </div>
               <h2 className="text-2xl font-black mb-1 italic uppercase tracking-tighter leading-none">
-                {user?.name || "Utilisateur"}
+                {displayName}
               </h2>
-              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8 truncate">
-                {user?.email || "Chargement..."}
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                {user?.email || "email@example.com"}
               </p>
+              {role && (
+                <span className="inline-block bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-6">
+                  {role}
+                </span>
+              )}
               
               <div className="border-t border-slate-800 pt-8">
                 <p className="text-xl font-black leading-none">{myEmprunts.length + myPurchases.length}</p>

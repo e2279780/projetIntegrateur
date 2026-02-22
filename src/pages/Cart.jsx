@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // Importation nécessaire pour la redirection
+import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faTrashAlt, faShoppingBag, faPlus, faMinus, 
@@ -23,6 +23,13 @@ export default function Cart({ cartItems, onUpdateQuantity, promo, onApplyPromo 
     }
     setPromoInput("");
   };
+
+  // Extraction des données du livre (supporte les formats Firebase)
+  const getBookData = (item) => ({
+    title: item.title || 'Titre inconnu',
+    author: item.author || 'Auteur inconnu',
+    coverUrl: item.coverImageUrl || item.coverUrl || 'https://via.placeholder.com/150?text=Livre'
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-4 pb-20">
@@ -52,40 +59,44 @@ export default function Cart({ cartItems, onUpdateQuantity, promo, onApplyPromo 
           
           {/* LISTE DES ARTICLES */}
           <div className="lg:col-span-2 space-y-6">
-            {cartItems.map((item) => (
-              <div key={item.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-8 hover:shadow-xl transition-all duration-300">
-                <img 
-                  src={item.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:') || 'https://via.placeholder.com/150'} 
-                  className="w-28 h-40 object-cover rounded-2xl shadow-lg" 
-                  alt={item.volumeInfo?.title} 
-                />
-                
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="font-black text-slate-800 text-xl leading-tight mb-1">{item.volumeInfo?.title}</h3>
-                  <p className="text-blue-600 font-bold text-sm mb-4 uppercase tracking-wider">{item.volumeInfo?.authors?.[0]}</p>
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Prix unitaire: {unitPrice} $</p>
-                </div>
-
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex items-center bg-gray-50 rounded-2xl p-1 border border-gray-100">
-                    <button 
-                      onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                      className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition text-slate-400 hover:text-red-500"
-                    >
-                      <FontAwesomeIcon icon={item.quantity > 1 ? faMinus : faTrashAlt} />
-                    </button>
-                    <span className="w-12 text-center font-black text-slate-800">{item.quantity}</span>
-                    <button 
-                      onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                      className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition text-slate-400 hover:text-blue-600"
-                    >
-                      <FontAwesomeIcon icon={faPlus} />
-                    </button>
+            {cartItems.map((item) => {
+              const bookData = getBookData(item);
+              return (
+                <div key={item.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-8 hover:shadow-xl transition-all duration-300">
+                  <img 
+                    src={bookData.coverUrl} 
+                    className="w-28 h-40 object-cover rounded-2xl shadow-lg" 
+                    alt={bookData.title}
+                    onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Livre'; }}
+                  />
+                  
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="font-black text-slate-800 text-xl leading-tight mb-1">{bookData.title}</h3>
+                    <p className="text-blue-600 font-bold text-sm mb-4 uppercase tracking-wider">{bookData.author}</p>
+                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Prix unitaire: {unitPrice} $</p>
                   </div>
-                  <p className="font-black text-slate-900 italic">{(unitPrice * item.quantity).toFixed(2)} $</p>
+
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="flex items-center bg-gray-50 rounded-2xl p-1 border border-gray-100">
+                      <button 
+                        onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                        className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition text-slate-400 hover:text-red-500"
+                      >
+                        <FontAwesomeIcon icon={item.quantity > 1 ? faMinus : faTrashAlt} />
+                      </button>
+                      <span className="w-12 text-center font-black text-slate-800">{item.quantity}</span>
+                      <button 
+                        onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                        className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition text-slate-400 hover:text-blue-600"
+                      >
+                        <FontAwesomeIcon icon={faPlus} />
+                      </button>
+                    </div>
+                    <p className="font-black text-slate-900 italic">{(unitPrice * item.quantity).toFixed(2)} $</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* RÉCAPITULATIF ET PAIEMENT */}

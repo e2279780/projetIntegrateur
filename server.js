@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import process from 'process';
@@ -176,6 +179,25 @@ app.patch('/api/books/:id', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Biblioconnect API running on http://localhost:${PORT}`);
+  
+  // Initialisation automatique des livres au démarrage
+  try {
+    console.log('📚 Vérification de la base de données...');
+    const dbSvc = await import('./src/services/databaseService.js');
+    const seedModule = await import('./src/seedBooks.js');
+    
+    const existingBooks = await dbSvc.getAllBooks();
+    if (!existingBooks || existingBooks.length === 0) {
+      console.log('📚 Base vide détectée. Initialisation automatique des livres...');
+      const result = await seedModule.initializeBooksIfEmpty('Bibliothécaire');
+      console.log(`✅ ${result.addedCount || result.booksCount || 0} livres initialisés avec succès!`);
+    } else {
+      console.log(`✅ Base de données OK: ${existingBooks.length} livres trouvés.`);
+    }
+  } catch (err) {
+    console.log('⚠️ Initialisation auto ignorée (Firebase non configuré ou erreur):', err.message);
+    console.log('💡 Les livres seront chargés à la première requête ou via /init-books');
+  }
 });

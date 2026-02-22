@@ -11,7 +11,20 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '../firebase.js';
+
+// Detect if running in Node.js or browser and use appropriate Firebase config
+const isNode = typeof window === 'undefined';
+let db;
+
+if (isNode) {
+  // Server-side: use firebaseServer.js with process.env
+  const firebaseServer = await import('../firebaseServer.js');
+  db = firebaseServer.db;
+} else {
+  // Client-side: use firebase.js with import.meta.env
+  const firebase = await import('../firebase.js');
+  db = firebase.db;
+}
 
 // ============= OPÉRATIONS SUR LES LIVRES =============
 
@@ -37,6 +50,12 @@ export const addBook = async (userRole, bookData) => {
       totalCopies: bookData.totalCopies || 1,
       availableCopies: bookData.totalCopies || 1,
       coverImageUrl: bookData.coverImageUrl || '',
+      pages: bookData.pages || 0,
+      rating: bookData.rating || 0,
+      publisher: bookData.publisher || '',
+      yearPublished: bookData.yearPublished || new Date().getFullYear(),
+      language: bookData.language || 'Fr',
+      keywords: bookData.keywords || [],
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
