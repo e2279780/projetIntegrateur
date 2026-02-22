@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom'; // Crucial pour éviter le rafraîchissement
+import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faBookReader, 
@@ -11,7 +11,27 @@ import {
   faCheckCircle 
 } from '@fortawesome/free-solid-svg-icons';
 
+const SectionTitle = ({ icon, title }) => (
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-10 h-10 bg-blue-600/10 text-blue-600 rounded-xl flex items-center justify-center">
+      <FontAwesomeIcon icon={icon} />
+    </div>
+    <h2 className="text-xl font-black text-slate-800">{title}</h2>
+  </div>
+);
+
 export default function Dashboard({ user }) {
+  // --- SÉCURITÉ CRUCIALE : Empêche le crash si user est null au chargement ---
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-pulse font-black text-slate-300 uppercase tracking-widest">
+          Chargement du dashboard...
+        </div>
+      </div>
+    );
+  }
+
   const myEmprunts = [
     { 
       id: 1, 
@@ -45,21 +65,21 @@ export default function Dashboard({ user }) {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-10 font-sans">
+    <div className="max-w-[1600px] mx-auto px-6 py-10 font-sans animate-in fade-in duration-700">
       <div className="flex flex-col lg:flex-row gap-10">
         
         {/* SIDEBAR GAUCHE */}
         <aside className="w-full lg:w-80 shrink-0 space-y-8">
           <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
             <div className="relative z-10 text-center">
-              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl">
-                {user?.name?.charAt(0).toUpperCase() || "J"}
+              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] border-4 border-slate-800 flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl italic">
+                {user?.name?.charAt(0).toUpperCase() || "U"}
               </div>
               <h2 className="text-2xl font-black mb-1 italic uppercase tracking-tighter leading-none">
-                {user?.name || "Jason"}
+                {user?.name || "Utilisateur"}
               </h2>
-              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8">
-                {user?.email || "etudiant@cmaisonneuve.qc.ca"}
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8 truncate">
+                {user?.email || "Chargement..."}
               </p>
               
               <div className="border-t border-slate-800 pt-8">
@@ -77,7 +97,6 @@ export default function Dashboard({ user }) {
                 <span className="text-2xl font-black tracking-tighter">2.50 $</span>
               </div>
               
-              {/* UTILISATION DE LINK AU LIEU DE <a> */}
               <Link 
                 to="/frais" 
                 className="block w-full bg-red-50 text-red-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center hover:bg-red-600 hover:text-white transition-all border border-red-100 shadow-sm"
@@ -90,7 +109,7 @@ export default function Dashboard({ user }) {
 
         {/* CONTENU PRINCIPAL */}
         <div className="flex-1 space-y-12">
-          {/* Section Emprunts (US04) */}
+          {/* Section Emprunts */}
           <section>
             <div className="flex items-center gap-4 mb-8">
                <div className="w-12 h-12 bg-blue-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl shadow-blue-100">
@@ -106,7 +125,6 @@ export default function Dashboard({ user }) {
 
                 return (
                   <div key={book.id} className={`bg-white p-6 rounded-[3rem] border flex gap-8 group transition-all hover:shadow-xl ${isLate ? 'border-red-100 bg-red-50/10' : 'border-gray-100 shadow-sm'}`}>
-                    {/* CONTAINER FIXÉ POUR LES IMAGES */}
                     <div className="relative shrink-0 w-24 h-36 bg-gray-100 rounded-2xl overflow-hidden shadow-lg border border-gray-50">
                       <img 
                         src={book.thumbnail?.replace('http:', 'https:')} 
@@ -144,7 +162,7 @@ export default function Dashboard({ user }) {
             </div>
           </section>
 
-          {/* Section Liseuse (US05) */}
+          {/* Section Liseuse */}
           <section>
             <div className="flex items-center gap-4 mb-8">
                <div className="w-12 h-12 bg-emerald-500 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl shadow-emerald-100">
@@ -183,7 +201,6 @@ export default function Dashboard({ user }) {
               ))}
             </div>
           </section>
-
         </div>
       </div>
     </div>

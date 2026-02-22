@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faTruckLoading, faAlertTriangle, faPlusCircle, 
+  faTruckLoading, 
+  faExclamationTriangle, 
+  faPlusCircle, 
   faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 
-import { useUser } from '../context/useUser';
-
 export default function Admin() {
-  useUser();
-
   const [inventory, setInventory] = useState([]);
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -48,13 +46,11 @@ export default function Admin() {
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-10">
       
-      {/* HEADER ADMIN */}
       <div className="mb-12">
         <h1 className="text-5xl font-black text-slate-900 italic uppercase tracking-tighter mb-2">Dashboard Admin</h1>
         <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">Gestion de l'inventaire & Fournisseurs</p>
       </div>
 
-      {/* STATS RAPIDES (Critère US02) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
@@ -66,7 +62,7 @@ export default function Admin() {
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
           <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4">
-            <FontAwesomeIcon icon={faAlertTriangle} />
+            <FontAwesomeIcon icon={faExclamationTriangle} />
           </div>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alertes Stock Bas</p>
           <p className="text-3xl font-black text-red-500 italic">
@@ -85,7 +81,6 @@ export default function Admin() {
 
       <div className="flex flex-col xl:flex-row gap-10">
         
-        {/* TABLEAU D'INVENTAIRE (Critère US02) */}
         <div className="flex-1 bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
             <h2 className="font-black text-xl uppercase italic">Inventaire des Stocks</h2>
@@ -163,7 +158,6 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* COMMANDE FOURNISSEUR (Critère US03) */}
         <aside className="w-full xl:w-96 space-y-8">
           <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Nouvelle Commande</h3>
