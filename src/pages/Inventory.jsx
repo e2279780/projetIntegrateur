@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import BookCard from '../components/BookCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faSearch, faSortAlphaDown, faSpinner, faThLarge, 
-  faChevronDown, faBookOpen, faTimes, faFilter, 
+  faSearch, faThLarge, 
+  faBookOpen, faTimes, faFilter, 
   faFire, faHistory, faGraduationCap, faGem 
 } from '@fortawesome/free-solid-svg-icons';
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCreditCard, faShieldAlt, faCheckCircle, faLock, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faCreditCard, faCheckCircle, faLock, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 export default function Frais() {
   const [isProcessing, setIsProcessing] = useState(false);

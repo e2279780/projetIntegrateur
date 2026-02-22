@@ -8,7 +8,6 @@ import {
   faPlayCircle, 
   faCalendarAlt, 
   faCreditCard, 
-  faBookmark,
   faCheckCircle 
 } from '@fortawesome/free-solid-svg-icons';
 

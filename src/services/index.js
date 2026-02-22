@@ -3,6 +3,6 @@
  * Utilisation: import { authService, databaseService, storageService } from './services/index.js'
  */
 
-export * as authService from './authService';
-export * as databaseService from './databaseService';
-export * as storageService from './storageService';
+export * as authService from './authService.js';
+export * as databaseService from './databaseService.js';
+export * as storageService from './storageService.js';

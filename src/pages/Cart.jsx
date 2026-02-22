@@ -6,7 +6,7 @@ import {
   faCreditCard, faTicketAlt, faCheckCircle, faExclamationCircle 
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Cart({ cartItems, onRemove, onUpdateQuantity, promo, onApplyPromo }) {
+export default function Cart({ cartItems, onUpdateQuantity, promo, onApplyPromo }) {
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState(false);
   

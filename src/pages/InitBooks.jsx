@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook, faCheckCircle, faExclamationTriangle, faSpinner, faDatabase } from '@fortawesome/free-solid-svg-icons';
-import { initializeBooksIfEmpty, booksStats } from '../seedBooks';
+import { useEffect } from 'react';
 import { useUser } from '../context/useUser';
 
 export default function InitBooks() {
@@ -15,10 +15,36 @@ export default function InitBooks() {
   const [initialized, setInitialized] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState('');
-  const [stats] = useState(booksStats);
+  const [stats, setStats] = useState({ total: 0, totalCopies: 0, averageRating: '0.00', categories: {} });
+  const [seedApiKey, setSeedApiKey] = useState('');
+
+  useEffect(() => {
+    // Récupérer les stats depuis l'API
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/books?page=1&limit=1000');
+        const json = await res.json();
+        const data = json.data || [];
+
+        const total = json.total || data.length;
+        const totalCopies = data.reduce((s, b) => s + (b.totalCopies || 0), 0);
+        const averageRating = (data.reduce((s, b) => s + (b.rating || 0), 0) / (data.length || 1)).toFixed(2);
+        const categories = data.reduce((acc, b) => {
+          const c = b.category || 'Autre';
+          acc[c] = (acc[c] || 0) + 1;
+          return acc;
+        }, {});
+
+        setStats({ total, totalCopies, averageRating, categories });
+      } catch (err) {
+        console.error('Erreur fetch stats', err);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const handleInitialize = async () => {
-    // Vérifier que l'utilisateur est bibliothécaire
     if (role !== 'Bibliothécaire') {
       setError('❌ Seul un bibliothécaire peut initialiser la base de données.');
       return;
@@ -27,14 +53,32 @@ export default function InitBooks() {
     try {
       setLoading(true);
       setError('');
-      const result = await initializeBooksIfEmpty('Bibliothécaire');
+
+      const headers = {};
+      if (seedApiKey) headers['x-api-key'] = seedApiKey;
+
+      const res = await fetch('/api/seed', { method: 'POST', headers });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Erreur lors du seed');
+
       setResults(result);
-      
-      if (result.status === 'already_initialized') {
-        setInitialized(true);
-      } else if (result.addedCount > 0) {
+
+      if (result.status === 'already_initialized' || (result.addedCount && result.addedCount > 0)) {
         setInitialized(true);
       }
+
+      // Refresh stats
+      const statsRes = await fetch('/api/books?page=1&limit=1000');
+      const statsJson = await statsRes.json();
+      const data = statsJson.data || [];
+      const totalCopies = data.reduce((s, b) => s + (b.totalCopies || 0), 0);
+      const averageRating = (data.reduce((s, b) => s + (b.rating || 0), 0) / (data.length || 1)).toFixed(2);
+      const categories = data.reduce((acc, b) => {
+        const c = b.category || 'Autre';
+        acc[c] = (acc[c] || 0) + 1;
+        return acc;
+      }, {});
+      setStats({ total: statsJson.total || data.length, totalCopies, averageRating, categories });
     } catch (err) {
       setError(`❌ Erreur: ${err.message}`);
     } finally {
@@ -127,6 +171,18 @@ export default function InitBooks() {
                 Cette action importera <strong>{stats.total} livres</strong> dans Firestore. 
                 Vous ne pouvez effectuer cette opération qu'une seule fois.
               </p>
+              {role === 'Bibliothécaire' && (
+                <div className="mb-6 max-w-md mx-auto">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Clé API pour le seed (x-api-key)</label>
+                  <input
+                    type="text"
+                    value={seedApiKey}
+                    onChange={e => setSeedApiKey(e.target.value)}
+                    placeholder="Entrez la clé API pour /api/seed"
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2"
+                  />
+                </div>
+              )}
               
               <button
                 onClick={handleInitialize}

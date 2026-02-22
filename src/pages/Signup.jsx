@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faLock, faUserPlus, faCheckCircle, faArrowRight, faShieldAlt, faBook } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faLock, faUserPlus, faCheckCircle, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { authService } from '../services';
 
 export default function Signup({ onLogin }) {
@@ -32,7 +32,7 @@ export default function Signup({ onLogin }) {
     setLoading(true);
     setError('');
     try {
-      const user = await authService.signupWithGoogle();
+      const user = await authService.signupWithGoogle(role);
       onLogin(user.email);
       navigate('/dashboard');
     } catch (err) {
@@ -112,6 +112,39 @@ export default function Signup({ onLogin }) {
                 disabled={loading}
               />
             </div>
+          </div>
+
+          {/* Role selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Rôle</label>
+            <div className="flex items-center gap-4">
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="role"
+                  value="Membre"
+                  checked={role === 'Membre'}
+                  onChange={() => setRole('Membre')}
+                  disabled={loading}
+                  className="form-radio text-blue-600 h-4 w-4"
+                />
+                <span className="text-sm font-medium text-slate-700">Membre</span>
+              </label>
+
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="role"
+                  value="Bibliothécaire"
+                  checked={role === 'Bibliothécaire'}
+                  onChange={() => setRole('Bibliothécaire')}
+                  disabled={loading}
+                  className="form-radio text-blue-600 h-4 w-4"
+                />
+                <span className="text-sm font-medium text-slate-700">Bibliothécaire</span>
+              </label>
+            </div>
+            <p className="text-xs text-slate-400">Choisissez votre rôle. Les bibliothécaires peuvent gérer l'inventaire.</p>
           </div>
 
           {error && (

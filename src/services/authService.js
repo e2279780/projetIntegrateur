@@ -7,7 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebase.js';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 /**
@@ -78,7 +78,8 @@ export const login = async (email, password) => {
     };
   } catch (error) {
     console.error('Erreur lors de la connexion:', error.message);
-    throw new Error('Email ou mot de passe incorrect');
+    // Renvoyer le message original si possible pour aider au débogage côté client
+    throw new Error(error.message || 'Email ou mot de passe incorrect');
   }
 };
 
@@ -132,7 +133,7 @@ export const updateUserProfile = async (userId, updates) => {
  * Connexion avec Google
  * @returns {Promise<Object>} Données utilisateur
  */
-export const loginWithGoogle = async () => {
+export const loginWithGoogle = async (role = 'Membre') => {
   try {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
@@ -157,7 +158,7 @@ export const loginWithGoogle = async () => {
         firstName,
         lastName,
         photoURL: user.photoURL || '',
-        role: 'Membre', // Rôle par défaut
+        role: role || 'Membre', // Rôle fourni (ou défaut)
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         authMethod: 'google',
@@ -176,7 +177,7 @@ export const loginWithGoogle = async () => {
       email: user.email,
       firstName: userData.firstName || (user.displayName || '').split(' ')[0],
       lastName: userData.lastName || (user.displayName || '').split(' ').slice(1).join(' '),
-      role: userData.role || 'Membre',
+      role: userData.role || role || 'Membre',
       photoURL: user.photoURL,
     };
   } catch (error) {
@@ -189,9 +190,9 @@ export const loginWithGoogle = async () => {
  * Connexion avec Google (version Redirect - alternative)
  * @returns {Promise<Object>} Données utilisateur
  */
-export const signupWithGoogle = async () => {
-  // Même fonction que loginWithGoogle pour l'inscription
-  return loginWithGoogle();
+export const signupWithGoogle = async (role = 'Membre') => {
+  // Même fonction que loginWithGoogle pour l'inscription mais accepte un rôle
+  return loginWithGoogle(role);
 };
 
 /**
