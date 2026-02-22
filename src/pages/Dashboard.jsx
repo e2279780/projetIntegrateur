@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom'; // Crucial pour éviter le rafraîchissement
+import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faBookReader, 
@@ -11,14 +11,34 @@ import {
   faCheckCircle 
 } from '@fortawesome/free-solid-svg-icons';
 
+const SectionTitle = ({ icon, title }) => (
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-10 h-10 bg-blue-600/10 text-blue-600 rounded-xl flex items-center justify-center">
+      <FontAwesomeIcon icon={icon} />
+    </div>
+    <h2 className="text-xl font-black text-slate-800">{title}</h2>
+  </div>
+);
+
 export default function Dashboard({ user, role }) {
+  // Sécurité : Empêche le crash si user est null au chargement
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-pulse font-black text-slate-300 uppercase tracking-widest">
+          Chargement du dashboard...
+        </div>
+      </div>
+    );
+  }
+
   // Construire le nom d'affichage à partir des données Firebase
   const displayName = user?.firstName 
     ? `${user.firstName} ${user.lastName || ''}`.trim() 
     : user?.name || user?.email?.split('@')[0] || "Utilisateur";
   
   const initial = displayName.charAt(0).toUpperCase();
-  
+
   const myEmprunts = [
     { 
       id: 1, 
@@ -52,7 +72,7 @@ export default function Dashboard({ user, role }) {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-10 font-sans">
+    <div className="max-w-[1600px] mx-auto px-6 py-10 font-sans animate-in fade-in duration-700">
       <div className="flex flex-col lg:flex-row gap-10">
         
         {/* SIDEBAR GAUCHE */}
@@ -89,7 +109,6 @@ export default function Dashboard({ user, role }) {
                 <span className="text-2xl font-black tracking-tighter">2.50 $</span>
               </div>
               
-              {/* UTILISATION DE LINK AU LIEU DE <a> */}
               <Link 
                 to="/frais" 
                 className="block w-full bg-red-50 text-red-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center hover:bg-red-600 hover:text-white transition-all border border-red-100 shadow-sm"
@@ -102,7 +121,7 @@ export default function Dashboard({ user, role }) {
 
         {/* CONTENU PRINCIPAL */}
         <div className="flex-1 space-y-12">
-          {/* Section Emprunts (US04) */}
+          {/* Section Emprunts */}
           <section>
             <div className="flex items-center gap-4 mb-8">
                <div className="w-12 h-12 bg-blue-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl shadow-blue-100">
@@ -118,7 +137,6 @@ export default function Dashboard({ user, role }) {
 
                 return (
                   <div key={book.id} className={`bg-white p-6 rounded-[3rem] border flex gap-8 group transition-all hover:shadow-xl ${isLate ? 'border-red-100 bg-red-50/10' : 'border-gray-100 shadow-sm'}`}>
-                    {/* CONTAINER FIXÉ POUR LES IMAGES */}
                     <div className="relative shrink-0 w-24 h-36 bg-gray-100 rounded-2xl overflow-hidden shadow-lg border border-gray-50">
                       <img 
                         src={book.thumbnail?.replace('http:', 'https:')} 
@@ -156,7 +174,7 @@ export default function Dashboard({ user, role }) {
             </div>
           </section>
 
-          {/* Section Liseuse (US05) */}
+          {/* Section Liseuse */}
           <section>
             <div className="flex items-center gap-4 mb-8">
                <div className="w-12 h-12 bg-emerald-500 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl shadow-emerald-100">
@@ -195,7 +213,6 @@ export default function Dashboard({ user, role }) {
               ))}
             </div>
           </section>
-
         </div>
       </div>
     </div>

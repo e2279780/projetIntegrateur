@@ -1,10 +1,19 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook, faShoppingCart, faUserCircle, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faBook, 
+  faShoppingCart, 
+  faUserCircle, 
+  faSignOutAlt, 
+  faChalkboardTeacher 
+} from '@fortawesome/free-solid-svg-icons';
 
 export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
   const navigate = useNavigate();
+
+  // Sécurité : on définit un nom par défaut si l'objet user est en cours de chargement
+  const displayName = user?.name || "Utilisateur";
 
   return (
     <nav className="bg-slate-900 text-white sticky top-0 z-[100] shadow-xl">
@@ -30,31 +39,45 @@ export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
                 )}
               </Link>
 
-              {/* Menu Profil - CORRIGÉ */}
+              {/* Menu Profil */}
               <div className="group relative">
-                {/* Bouton Profil */}
+                {/* Bouton Profil sécurisé avec ?. */}
                 <button className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl hover:bg-slate-700 transition border border-slate-700">
                   <FontAwesomeIcon icon={faUserCircle} className="text-lg text-blue-400" /> 
-                  <span className="capitalize font-bold text-sm">
+                  <span className="capitalize font-bold text-sm truncate max-w-[100px]">
                     {user?.firstName || user?.name || user?.email?.split('@')[0] || 'Utilisateur'}
                   </span>
                 </button>
 
-                {/* Le menu déroulant avec le pont invisible (pt-2) */}
-                <div className="absolute right-0 mt-0 pt-2 w-48 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-[110]">
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 mt-0 pt-2 w-52 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-[110]">
                   <div className="bg-white text-slate-900 rounded-2xl shadow-2xl py-2 border border-gray-100 overflow-hidden">
+                    
+                    {/* Lien dynamique Admin si Bibliothécaire */}
+                    {user?.role === 'Bibliothécaire' && (
+                      <Link 
+                        to="/admin" 
+                        className="block px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 font-black text-xs uppercase tracking-widest transition border-b border-blue-100"
+                      >
+                        <FontAwesomeIcon icon={faChalkboardTeacher} className="mr-2" /> 
+                        Espace Admin
+                      </Link>
+                    )}
+
                     <Link 
                       to="/profile" 
-                      className="block px-4 py-3 hover:bg-blue-50 hover:text-blue-600 font-bold text-sm transition"
+                      className="block px-4 py-3 hover:bg-slate-50 hover:text-blue-600 font-bold text-sm transition"
                     >
                       Mon Profil
                     </Link>
+                    
                     <Link 
                       to="/dashboard" 
-                      className="block px-4 py-3 hover:bg-blue-50 hover:text-blue-600 font-bold text-sm transition"
+                      className="block px-4 py-3 hover:bg-slate-50 hover:text-blue-600 font-bold text-sm transition"
                     >
                       Tableau de bord
                     </Link>
+
                     <button 
                       onClick={() => { onLogout(); navigate('/'); }} 
                       className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 font-bold text-sm border-t border-gray-50 flex items-center gap-2 transition"

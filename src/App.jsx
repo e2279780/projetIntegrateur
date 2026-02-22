@@ -7,12 +7,10 @@ import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { useUser } from './context/useUser';
 import { authService } from './services';
 
-// Import des composants
 import Navbar from './components/Navbar';
 import Loading from './components/Loading';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Import des pages
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
@@ -21,47 +19,40 @@ import Cart from './pages/Cart';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Frais from './pages/Frais';
-import Checkout from './pages/Checkout';
-import BookDetail from './pages/BookDetail';
-import InitBooks from './pages/InitBooks';
+import Checkout from './pages/Checkout'; // Import de la page de paiement du panier
+import BookDetail from './pages/BookDetail'; // Page de détail d'un livre avec ElegantCarousel
+import InitBooks from './pages/InitBooks'; // Page d'initialisation de la base de données
 
 export default function App() {
   // Utilisation du contexte utilisateur Firebase
   const { user, loading: authLoading, role } = useUser();
+  
+  // Dériver isLoggedIn de l'état utilisateur Firebase
+  const isLoggedIn = !!user;
   
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutToast, setShowLogoutToast] = useState(false);
   const [cart, setCart] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   
-  // Code promo pour le Collège de Maisonneuve
   const [promoCode, setPromoCode] = useState({ 
     code: "MAISONNEUVE20", 
     discount: 0.20, 
     active: false 
   });
 
-  // L'utilisateur est connecté si user existe
-  const isLoggedIn = !!user;
-
-  // Gestion du chargement initial (minimum 1.5s pour l'animation)
+  // Simulation du chargement initial (2 secondes)
   useEffect(() => {
     const timer = setTimeout(() => setInitialLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Gestion de l'affichage du toast de déconnexion
   useEffect(() => {
     if (showLogoutToast) {
       const timer = setTimeout(() => setShowLogoutToast(false), 4000);
       return () => clearTimeout(timer);
     }
   }, [showLogoutToast]);
-
-  // Logique de connexion - appelée par Login/Signup
-  const handleLogin = () => {
-    setShowLogoutToast(false);
-  };
 
   // Logique de déconnexion avec animation
   const handleLogout = async () => {
@@ -78,7 +69,6 @@ export default function App() {
     }
   };
 
-  // Gestion du panier
   const addToCart = (book, quantity = 1) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === book.id);
@@ -106,7 +96,7 @@ export default function App() {
   };
 
   const applyPromo = (inputCode) => {
-    if (inputCode.toUpperCase() === promoCode.code) {
+    if (inputCode && inputCode.toUpperCase() === promoCode.code) {
       setPromoCode({ ...promoCode, active: true });
       return true;
     }
@@ -122,7 +112,6 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
         
-        {/* Toast de succès de déconnexion */}
         {showLogoutToast && (
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="bg-slate-900/95 backdrop-blur-md text-white px-8 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border border-slate-700/50">
@@ -131,7 +120,7 @@ export default function App() {
               </div>
               <div>
                 <p className="font-black text-[10px] uppercase tracking-[0.3em] text-emerald-400">Succès</p>
-                <p className="font-bold text-sm tracking-tight">Vous avez été déconnecté avec succès.</p>
+                <p className="font-bold text-sm tracking-tight">Vous avez été déconnecté.</p>
               </div>
             </div>
           </div>
@@ -146,37 +135,38 @@ export default function App() {
 
         <main className="flex-1 flex flex-col">
           <Routes>
-            {/* ROUTES PUBLIQUES */}
             <Route path="/" element={<Home isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
             <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
-            <Route path="/book/:bookId" element={<BookDetail addToCart={addToCart} isLoggedIn={isLoggedIn} />} />
-            <Route path="/login" element={!isLoggedIn ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
-            <Route path="/signup" element={!isLoggedIn ? <Signup onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
+            <Route path="/book/:bookId" element={<BookDetail />} />
+            <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/dashboard" />} />
+            <Route path="/signup" element={!isLoggedIn ? <Signup /> : <Navigate to="/dashboard" />} />
             
-            {/* Page des frais en public pour test visuel */}
             <Route path="/frais" element={<Frais />} />
 
-            {/* ROUTES PROTÉGÉES */}
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <Dashboard user={user} role={role} />
               </ProtectedRoute>
             } />
 
-            <Route path="/profile" element={
+            <Route path="/admin" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Profile user={user} role={role} />
+                {user?.role === 'Bibliothécaire' ? <Admin /> : <Navigate to="/dashboard" />}
               </ProtectedRoute>
             } />
 
-            {/* Page d'initialisation de la base de données (Bibliothécaires) */}
+            <Route path="/profile" element={
+              <ProtectedRoute isLoggedIn={isLoggedIn}>
+                <Profile user={user} />
+              </ProtectedRoute>
+            } />
+
             <Route path="/init-books" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <InitBooks />
               </ProtectedRoute>
             } />
 
-            {/* Page de paiement du panier liée à l'US05 */}
             <Route path="/checkout" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <Checkout cartItems={cart} />
@@ -195,7 +185,6 @@ export default function App() {
               </ProtectedRoute>
             } />
 
-            {/* Redirection automatique */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>

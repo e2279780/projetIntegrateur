@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUser, faLock, faMapMarkerAlt, faCreditCard, 
-  faCamera, faCheckCircle, faEnvelope, faPlus 
+  faCamera, faCheckCircle, faEnvelope, faPlus, faSpinner, faExclamationTriangle 
 } from '@fortawesome/free-solid-svg-icons';
+import { authService } from '../services';
 
 const SectionTitle = ({ icon, title }) => (
   <div className="flex items-center gap-3 mb-6">
@@ -16,6 +17,8 @@ const SectionTitle = ({ icon, title }) => (
 
 export default function Profile({ user, role }) {
   const [activeTab, setActiveTab] = useState('infos');
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ type: '', message: '' });
   
   // Construire le nom d'affichage à partir des données Firebase
   const displayName = user?.firstName 
@@ -24,13 +27,39 @@ export default function Profile({ user, role }) {
   
   const initial = displayName.charAt(0).toUpperCase();
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus({ type: '', message: '' });
+
+    const updatedData = {
+      name: e.target.name.value,
+      email: e.target.email.value
+    };
+
+    try {
+      await authService.updateUser(user.id || user.uid, updatedData);
+      
+      setStatus({ 
+        type: 'success', 
+        message: 'Vos informations ont été mises à jour avec succès dans la base de données.' 
+      });
+    } catch (err) {
+      setStatus({ 
+        type: 'error', 
+        message: err.message || 'Une erreur est survenue lors de la mise à jour.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8">
+    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8 px-4 py-10">
       
       {/* Barre latérale du Profil */}
       <div className="w-full md:w-1/3 space-y-6">
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-8 text-center relative overflow-hidden">
-          {/* Header de fond décoratif */}
           <div className="absolute top-0 left-0 w-full h-24 bg-slate-900 z-0"></div>
           
           <div className="relative z-10">
@@ -38,7 +67,6 @@ export default function Profile({ user, role }) {
               <div className="w-32 h-32 bg-blue-600 rounded-[2.5rem] border-4 border-white flex items-center justify-center text-white text-5xl font-black shadow-lg mx-auto mb-4">
                 {initial}
               </div>
-              {/* Bouton pour modifier la photo */}
               <button className="absolute bottom-4 right-0 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-slate-600 hover:text-blue-600 transition border border-gray-100">
                 <FontAwesomeIcon icon={faCamera} />
               </button>
@@ -70,45 +98,79 @@ export default function Profile({ user, role }) {
       </div>
 
       {/* Zone de contenu dynamique */}
-      <div className="flex-1 bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-10 min-h-[600px]">
+      <div className="flex-1 bg-white rounded-[3rem] shadow-xl border border-gray-100 p-10 min-h-[600px]">
         
         {/* ONGLET : INFOS */}
         {activeTab === 'infos' && (
-          <div className="animate-in fade-in slide-in-from-right-4">
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
             <SectionTitle icon={faUser} title="Modifier le profil" />
-            <form className="space-y-6">
+            
+            {status.message && (
+              <div className={`mb-6 p-4 rounded-2xl font-bold text-sm flex items-center gap-3 ${
+                status.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+              }`}>
+                <FontAwesomeIcon icon={status.type === 'success' ? faCheckCircle : faExclamationTriangle} />
+                {status.message}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase ml-1">Nom complet</label>
-                  <input type="text" defaultValue={user?.name} className="w-full px-6 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
+                  <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">Nom complet</label>
+                  <input 
+                    name="name"
+                    type="text" 
+                    defaultValue={user?.name} 
+                    className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700" 
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase ml-1">Email</label>
+                  <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">Email</label>
                   <div className="relative">
                     <FontAwesomeIcon icon={faEnvelope} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
-                    <input type="email" defaultValue={user?.email} className="w-full pl-14 pr-6 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
+                    <input 
+                      name="email"
+                      type="email" 
+                      defaultValue={user?.email} 
+                      className="w-full pl-14 pr-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700" 
+                      required
+                    />
                   </div>
                 </div>
               </div>
-              <button type="submit" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-700 transition">Enregistrer les changements</button>
+
+              <div className="pt-4">
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-blue-700 transition transform active:scale-95 disabled:opacity-70 flex items-center gap-3 shadow-xl shadow-blue-100"
+                >
+                  {loading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : null}
+                  {loading ? 'Mise à jour en cours...' : 'Enregistrer les changements'}
+                </button>
+              </div>
             </form>
           </div>
         )}
 
-        {/* ONGLET : SÉCURITÉ (Mot de passe) */}
+        {/* ONGLET : SÉCURITÉ */}
         {activeTab === 'securite' && (
           <div className="animate-in fade-in slide-in-from-right-4">
             <SectionTitle icon={faLock} title="Changer le mot de passe" />
             <form className="space-y-6 max-w-md">
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase ml-1">Mot de passe actuel</label>
-                <input type="password" placeholder="••••••••" className="w-full px-6 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">Mot de passe actuel</label>
+                <input type="password" placeholder="••••••••" className="w-full px-6 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase ml-1">Nouveau mot de passe</label>
-                <input type="password" placeholder="••••••••" className="w-full px-6 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">Nouveau mot de passe</label>
+                <input type="password" placeholder="••••••••" className="w-full px-6 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
               </div>
-              <button type="submit" className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-800 transition">Mettre à jour le mot de passe</button>
+              <button type="submit" className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-800 transition shadow-lg shadow-slate-200">
+                Mettre à jour le mot de passe
+              </button>
             </form>
           </div>
         )}
@@ -119,20 +181,22 @@ export default function Profile({ user, role }) {
             <SectionTitle icon={faMapMarkerAlt} title="Mes Adresses" />
             <div className="grid grid-cols-1 gap-4 mb-8">
               <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 flex items-start gap-4">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"><FontAwesomeIcon icon={faMapMarkerAlt} /></div>
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm">
+                  <FontAwesomeIcon icon={faMapMarkerAlt} />
+                </div>
                 <div>
                   <p className="font-black text-slate-800">Maison (Principale)</p>
-                  <p className="text-slate-500 text-sm">3800 Sherbrooke St E, Montreal, Quebec H1X 2A2</p>
+                  <p className="text-slate-500 text-sm font-medium">3800 Sherbrooke St E, Montreal, Quebec H1X 2A2</p>
                 </div>
               </div>
             </div>
-            <button className="flex items-center gap-2 text-blue-600 font-black hover:underline px-2">
+            <button className="flex items-center gap-2 text-blue-600 font-black hover:underline px-2 transition">
               <FontAwesomeIcon icon={faPlus} /> Ajouter une nouvelle adresse
             </button>
           </div>
         )}
 
-        {/* ONGLET : PAIEMENT (Lien / Carte) */}
+        {/* ONGLET : PAIEMENT */}
         {activeTab === 'paiement' && (
           <div className="animate-in fade-in slide-in-from-right-4">
             <SectionTitle icon={faCreditCard} title="Modes de paiement" />
@@ -146,16 +210,15 @@ export default function Profile({ user, role }) {
                   <p className="text-2xl font-mono mb-8 tracking-widest">•••• •••• •••• 4242</p>
                   <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-slate-400 text-[10px] uppercase font-bold">Expire le</p>
-                      <p className="font-bold">12 / 28</p>
+                      <p className="text-slate-400 text-[10px] uppercase font-black tracking-tighter">Expire le</p>
+                      <p className="font-bold tracking-widest text-lg">12 / 28</p>
                     </div>
-                    <button className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-bold transition backdrop-blur-md">Modifier</button>
+                    <button className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl text-xs font-bold transition backdrop-blur-md border border-white/10 uppercase tracking-widest">Modifier</button>
                   </div>
                 </div>
               </div>
 
-              {/* Bouton pour Stripe / Link / Carte */}
-              <button className="w-full border-2 border-dashed border-gray-200 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all group">
+              <button className="w-full border-2 border-dashed border-gray-200 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50/50 transition-all group">
                 <FontAwesomeIcon icon={faPlus} className="text-2xl mb-2 group-hover:scale-125 transition-transform" />
                 <span className="font-black text-sm uppercase tracking-widest">Lier une nouvelle carte</span>
               </button>
