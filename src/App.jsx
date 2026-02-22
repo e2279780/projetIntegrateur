@@ -46,13 +46,13 @@ export default function App() {
     }
   }, [showLogoutToast]);
 
-  // --- CORRECTION : handleLogin avec vérification de l'email ---
   const handleLogin = (email, role = 'Membre') => {
-    if (!email) return; // Empêche le crash si l'email est null/undefined
+    // 1. Sécurité : si l'email n'existe pas, on arrête tout
+    if (!email || typeof email !== 'string') return;
 
     setIsLoggedIn(true);
     
-    // Génération sécurisée du nom
+    // 2. Sécurité : on vérifie la présence du @ avant de découper
     const emailPrefix = email.includes('@') ? email.split('@')[0] : "Utilisateur";
     const formattedName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
 
