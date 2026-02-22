@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faShoppingCart, faBookmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faShoppingCart, faBookmark, faCheckCircle, faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
 import ElegantCarousel from '../components/ElegantCarousel';
 import { databaseService } from '../services';
 import Loading from '../components/Loading';
 
 /**
  * BookDetail - Page de détail d'un livre avec carousel elegant
- * Affiche les informations complètes du livre et permet de l'emprunter
+ * Affiche les informations complètes du livre et permet de l'ajouter au panier
  */
-export default function BookDetail() {
+export default function BookDetail({ addToCart, isLoggedIn }) {
   const { bookId } = useParams();
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [borrowing, setBorrowing] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     const loadBook = async () => {
@@ -35,17 +36,15 @@ export default function BookDetail() {
     loadBook();
   }, [bookId]);
 
-  const handleBorrow = async () => {
-    try {
-      setBorrowing(true);
-      // Logique d'emprunt sera implémentée ici
-      setBorrowing(false);
-      // Afficher un message de succès
-    } catch (err) {
-      setError('Erreur lors de l\'emprunt: ' + err.message);
-      setBorrowing(false);
+  const handleAddToCart = () => {
+    if (addToCart && book) {
+      addToCart(book, quantity);
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 3000);
     }
   };
+
+  const availableCopies = book?.availableCopies ?? book?.totalCopies ?? 0;
 
   if (loading) {
     return <Loading />;
@@ -178,8 +177,8 @@ export default function BookDetail() {
                 )}
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-gray-600 uppercase tracking-wider">Disponibilité</span>
-                  <span className={`text-sm font-black ${book.availableCopies > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {book.availableCopies > 0 ? `${book.availableCopies} disponible(s)` : 'Indisponible'}
+                  <span className={`text-sm font-black ${availableCopies > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {availableCopies > 0 ? `${availableCopies} disponible(s)` : 'Indisponible'}
                   </span>
                 </div>
               </div>
@@ -199,15 +198,55 @@ export default function BookDetail() {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={handleBorrow}
-                disabled={borrowing || book.availableCopies === 0}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-blue-200 flex items-center justify-center gap-3"
-              >
-                <FontAwesomeIcon icon={faShoppingCart} />
-                {borrowing ? 'Emprunt en cours...' : 'Emprunter ce livre'}
-              </button>
+            <div className="space-y-4">
+              {/* Notification d'ajout */}
+              {addedToCart && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl flex items-center gap-3">
+                  <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
+                  <span className="font-bold">Ajouté au panier !</span>
+                </div>
+              )}
+
+              {/* Sélecteur de quantité */}
+              {isLoggedIn && availableCopies > 0 && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Quantité</p>
+                  <div className="flex items-center justify-center gap-4">
+                    <button 
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-200 text-slate-400 hover:text-red-500 transition flex items-center justify-center"
+                    >
+                      <FontAwesomeIcon icon={faMinus} />
+                    </button>
+                    <span className="text-2xl font-black text-slate-900 w-10 text-center">{quantity}</span>
+                    <button 
+                      onClick={() => setQuantity(Math.min(availableCopies, quantity + 1))}
+                      className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-200 text-slate-400 hover:text-blue-600 transition flex items-center justify-center"
+                    >
+                      <FontAwesomeIcon icon={faPlus} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isLoggedIn && availableCopies > 0 && (
+                <button
+                  onClick={handleAddToCart}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-emerald-200 flex items-center justify-center gap-3"
+                >
+                  <FontAwesomeIcon icon={faShoppingCart} />
+                  Ajouter au panier
+                </button>
+              )}
+
+              {!isLoggedIn && (
+                <a
+                  href="/login"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-blue-200 flex items-center justify-center gap-3"
+                >
+                  Connectez-vous pour acheter
+                </a>
+              )}
 
               <button
                 className="w-full bg-white border-2 border-gray-300 hover:border-blue-400 text-slate-800 py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-3"
@@ -218,7 +257,7 @@ export default function BookDetail() {
             </div>
 
             {/* Info Message */}
-            {book.availableCopies === 0 && (
+            {availableCopies === 0 && (
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
                 <p className="text-sm font-bold text-yellow-800">
                   📦 Ce livre est actuellement indisponible. Vous pouvez l'ajouter à votre liste d'attente.

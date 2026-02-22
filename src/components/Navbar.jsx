@@ -35,7 +35,9 @@ export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
                 {/* Bouton Profil */}
                 <button className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl hover:bg-slate-700 transition border border-slate-700">
                   <FontAwesomeIcon icon={faUserCircle} className="text-lg text-blue-400" /> 
-                  <span className="capitalize font-bold text-sm">{user?.name}</span>
+                  <span className="capitalize font-bold text-sm">
+                    {user?.firstName || user?.name || user?.email?.split('@')[0] || 'Utilisateur'}
+                  </span>
                 </button>
 
                 {/* Le menu déroulant avec le pont invisible (pt-2) */}

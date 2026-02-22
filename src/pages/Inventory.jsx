@@ -4,43 +4,54 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, faThLarge, 
   faBookOpen, faTimes, faFilter, 
-  faFire, faHistory, faGraduationCap, faGem 
+  faFire, faHistory, faGraduationCap, faGem, faBook, faStar
 } from '@fortawesome/free-solid-svg-icons';
 
 export default function Inventory({ isLoggedIn, addToCart }) {
   const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const API_KEY = "AIzaSyBKAng4NBs2DsYmnp-pYdrzAsmE04O2PZE";
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const categories = [
-    { id: 'Computers', label: 'Informatique', icon: faThLarge },
-    { id: 'Fiction', label: 'Fiction', icon: faBookOpen },
-    { id: 'History', label: 'Histoire', icon: faHistory },
-    { id: 'Science', label: 'Sciences', icon: faFire },
-    { id: 'Business', label: 'Affaires', icon: faGem }
+    { id: '', label: 'Tous les livres', icon: faThLarge },
+    { id: 'Développement', label: 'Informatique', icon: faThLarge },
+    { id: 'Fantasy', label: 'Fantasy', icon: faBookOpen },
+    { id: 'Histoire', label: 'Histoire', icon: faHistory },
+    { id: 'Sciences', label: 'Sciences', icon: faFire },
+    { id: 'Classique', label: 'Classiques', icon: faStar },
+    { id: 'Philosophie', label: 'Philosophie', icon: faGem }
   ];
 
-  const fetchBooks = async (q) => {
-    const searchTerm = q || "nouveautés";
+  const fetchBooks = async (searchQuery = '', category = '') => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}&maxResults=20&key=${API_KEY}`
-      );
+      let url = '/api/books?limit=20';
+      if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
+      if (category) url += `&category=${encodeURIComponent(category)}`;
+      
+      const res = await fetch(url);
       const data = await res.json();
-      setBooks(data.items || []);
+      setBooks(data.data || []);
+      setTotalBooks(data.total || 0);
     } catch (error) {
       console.error("Erreur API:", error);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const delay = setTimeout(() => fetchBooks(query), 600);
+    const delay = setTimeout(() => fetchBooks(query, selectedCategory), 400);
     return () => clearTimeout(delay);
-  }, [query]);
+  }, [query, selectedCategory]);
+
+  const handleCategoryClick = (catId) => {
+    setSelectedCategory(catId);
+    setQuery('');
+  };
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-10">
@@ -57,12 +68,12 @@ export default function Inventory({ isLoggedIn, addToCart }) {
                 {categories.map((cat) => (
                   <button 
                     key={cat.id}
-                    onClick={() => setQuery(cat.id)}
+                    onClick={() => handleCategoryClick(cat.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
-                      query === cat.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-gray-50'
+                      selectedCategory === cat.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-gray-50'
                     }`}
                   >
-                    <FontAwesomeIcon icon={cat.icon} className={query === cat.id ? 'text-white' : 'text-blue-600'} />
+                    <FontAwesomeIcon icon={cat.icon} className={selectedCategory === cat.id ? 'text-white' : 'text-blue-600'} />
                     {cat.label}
                   </button>
                 ))}
@@ -102,7 +113,10 @@ export default function Inventory({ isLoggedIn, addToCart }) {
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2 uppercase italic">Inventaire</h1>
-              <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">Explorez {books.length} titres disponibles</p>
+              <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">
+                {totalBooks} titre{totalBooks > 1 ? 's' : ''} disponible{totalBooks > 1 ? 's' : ''}
+                {selectedCategory && ` dans ${selectedCategory}`}
+              </p>
             </div>
             
             <div className="flex bg-white rounded-2xl p-2 shadow-sm border border-gray-100 items-center w-full md:w-96 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
@@ -112,7 +126,7 @@ export default function Inventory({ isLoggedIn, addToCart }) {
               <input 
                 type="text" 
                 className="flex-1 px-4 py-2 bg-transparent outline-none font-bold text-slate-700 placeholder:text-slate-300" 
-                placeholder="Titre, auteur, sujet..."
+                placeholder="Titre, auteur, ISBN..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />

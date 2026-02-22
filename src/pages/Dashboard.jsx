@@ -11,7 +11,14 @@ import {
   faCheckCircle 
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Dashboard({ user }) {
+export default function Dashboard({ user, role }) {
+  // Construire le nom d'affichage à partir des données Firebase
+  const displayName = user?.firstName 
+    ? `${user.firstName} ${user.lastName || ''}`.trim() 
+    : user?.name || user?.email?.split('@')[0] || "Utilisateur";
+  
+  const initial = displayName.charAt(0).toUpperCase();
+  
   const myEmprunts = [
     { 
       id: 1, 
@@ -53,14 +60,19 @@ export default function Dashboard({ user }) {
           <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
             <div className="relative z-10 text-center">
               <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl">
-                {user?.name?.charAt(0).toUpperCase() || "J"}
+                {initial}
               </div>
               <h2 className="text-2xl font-black mb-1 italic uppercase tracking-tighter leading-none">
-                {user?.name || "Jason"}
+                {displayName}
               </h2>
-              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8">
-                {user?.email || "etudiant@cmaisonneuve.qc.ca"}
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                {user?.email || "email@example.com"}
               </p>
+              {role && (
+                <span className="inline-block bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-6">
+                  {role}
+                </span>
+              )}
               
               <div className="border-t border-slate-800 pt-8">
                 <p className="text-xl font-black leading-none">{myEmprunts.length + myPurchases.length}</p>

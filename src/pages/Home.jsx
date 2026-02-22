@@ -9,29 +9,37 @@ import {
 export default function Home({ isLoggedIn, addToCart }) {
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const API_KEY = "AIzaSyBKAng4NBs2DsYmnp-pYdrzAsmE04O2PZE";
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState('');
 
-  const fetchBooks = async (q) => {
-    const query = q || "nouveautés"; 
+  // Charger les livres depuis l'API locale (Firebase)
+  const fetchBooks = async (searchQuery = '', categoryFilter = '') => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&key=${API_KEY}`
-      );
+      let url = '/api/books?limit=8';
+      if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
+      if (categoryFilter) url += `&category=${encodeURIComponent(categoryFilter)}`;
+      
+      const res = await fetch(url);
       const data = await res.json();
-      setBooks(data.items || []);
+      setBooks(data.data || []);
     } catch (err) {
       console.error("Erreur API:", err);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const delay = setTimeout(() => fetchBooks(search), 600); 
+    const delay = setTimeout(() => fetchBooks(search, category), 400);
     return () => clearTimeout(delay);
-  }, [search]);
+  }, [search, category]);
+
+  const handleCategoryClick = (cat) => {
+    setCategory(cat);
+    setSearch('');
+  };
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-10">
@@ -44,14 +52,17 @@ export default function Home({ isLoggedIn, addToCart }) {
           <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Découvrir</h3>
             <nav className="space-y-2">
-              <button onClick={() => setSearch('')} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm text-blue-600 bg-blue-50 transition-all">
-                <FontAwesomeIcon icon={faCompass} /> Tendances
+              <button onClick={() => handleCategoryClick('')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${!category ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-gray-50'}`}>
+                <FontAwesomeIcon icon={faCompass} /> Tous les livres
               </button>
-              <button onClick={() => setSearch('best sellers')} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm text-slate-500 hover:bg-gray-50 transition-all">
-                <FontAwesomeIcon icon={faFire} /> Populaires
+              <button onClick={() => handleCategoryClick('Développement')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${category === 'Développement' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-gray-50'}`}>
+                <FontAwesomeIcon icon={faFire} /> Développement
               </button>
-              <button onClick={() => setSearch('classics')} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm text-slate-500 hover:bg-gray-50 transition-all">
-                <FontAwesomeIcon icon={faStar} /> Incontournables
+              <button onClick={() => handleCategoryClick('Fantasy')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${category === 'Fantasy' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-gray-50'}`}>
+                <FontAwesomeIcon icon={faStar} /> Fantasy
+              </button>
+              <button onClick={() => handleCategoryClick('Classique')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${category === 'Classique' ? 'text-blue-600 bg-blue-50' : 'text-slate-500 hover:bg-gray-50'}`}>
+                <FontAwesomeIcon icon={faBook} /> Classiques
               </button>
             </nav>
           </div>
@@ -125,13 +136,13 @@ export default function Home({ isLoggedIn, addToCart }) {
             <div className="flex justify-between items-center mb-10 px-2">
               <div>
                 <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic">
-                  {search ? `Résultats : ${search}` : "Sélection du moment"}
+                  {search ? `Résultats : ${search}` : category ? category : "Sélection du moment"}
                 </h2>
                 <div className="h-1.5 w-12 bg-blue-600 rounded-full mt-2"></div>
               </div>
-              <button className="text-blue-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:gap-4 transition-all group">
+              <a href="/inventory" className="text-blue-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:gap-4 transition-all group">
                 Tout explorer <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1" />
-              </button>
+              </a>
             </div>
             
             {loading ? (

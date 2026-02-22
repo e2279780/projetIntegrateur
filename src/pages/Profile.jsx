@@ -14,8 +14,15 @@ const SectionTitle = ({ icon, title }) => (
   </div>
 );
 
-export default function Profile({ user }) {
+export default function Profile({ user, role }) {
   const [activeTab, setActiveTab] = useState('infos');
+  
+  // Construire le nom d'affichage à partir des données Firebase
+  const displayName = user?.firstName 
+    ? `${user.firstName} ${user.lastName || ''}`.trim() 
+    : user?.name || user?.email?.split('@')[0] || "Utilisateur";
+  
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8">
@@ -29,7 +36,7 @@ export default function Profile({ user }) {
           <div className="relative z-10">
             <div className="relative inline-block group">
               <div className="w-32 h-32 bg-blue-600 rounded-[2.5rem] border-4 border-white flex items-center justify-center text-white text-5xl font-black shadow-lg mx-auto mb-4">
-                {user?.name?.[0].toUpperCase() || "J"}
+                {initial}
               </div>
               {/* Bouton pour modifier la photo */}
               <button className="absolute bottom-4 right-0 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-slate-600 hover:text-blue-600 transition border border-gray-100">
@@ -37,9 +44,9 @@ export default function Profile({ user }) {
               </button>
             </div>
             
-            <h1 className="text-2xl font-black text-slate-800 capitalize">{user?.name || "Utilisateur"}</h1>
+            <h1 className="text-2xl font-black text-slate-800 capitalize">{displayName}</h1>
             <p className="text-blue-600 font-bold text-sm mb-6 flex items-center justify-center gap-2">
-              <FontAwesomeIcon icon={faCheckCircle} /> Membre Premium
+              <FontAwesomeIcon icon={faCheckCircle} /> {role || 'Membre'}
             </p>
 
             <div className="space-y-2">
