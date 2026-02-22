@@ -19,8 +19,16 @@ app.get('/', (req, res) => {
 app.get('/api/books', async (req, res) => {
   try {
     // Charger dynamiquement le service pour éviter d'importer firebase au démarrage
-    const dbSvc = await import('./src/services/databaseService.js');
-    const seedModule = await import('./src/seedBooks.js');
+    let dbSvc;
+    let seedModule;
+    
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+      seedModule = await import('./src/seedBooks.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import des modules:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
 
     let results = await dbSvc.getAllBooks();
     if (!results || results.length === 0) {
@@ -59,15 +67,24 @@ app.get('/api/books', async (req, res) => {
 
     res.json({ total: results.length, page, limit, data: paged });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erreur lors de la récupération des livres:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 });
 
 // Rechercher par ISBN
 app.get('/api/books/isbn/:isbn', async (req, res) => {
   try {
-    const dbSvc = await import('./src/services/databaseService.js');
-    const seedModule = await import('./src/seedBooks.js');
+    let dbSvc;
+    let seedModule;
+    
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+      seedModule = await import('./src/seedBooks.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import des modules:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
 
     let results = await dbSvc.getAllBooks();
     if (!results || results.length === 0) {
@@ -80,15 +97,24 @@ app.get('/api/books/isbn/:isbn', async (req, res) => {
     if (!book) return res.status(404).json({ error: 'Livre non trouvé' });
     res.json(book);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erreur lors de la récupération du livre par ISBN:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 });
 
 // Recherche texte (titre, auteur, isbn)
 app.get('/api/books/search', async (req, res) => {
   try {
-    const dbSvc = await import('./src/services/databaseService.js');
-    const seedModule = await import('./src/seedBooks.js');
+    let dbSvc;
+    let seedModule;
+    
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+      seedModule = await import('./src/seedBooks.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import des modules:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
 
     let results = await dbSvc.getAllBooks();
     if (!results || results.length === 0) {
@@ -109,7 +135,8 @@ app.get('/api/books/search', async (req, res) => {
 
     res.json(filtered);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erreur lors de la recherche:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 });
 
@@ -123,7 +150,15 @@ app.post('/api/seed', async (req, res) => {
     }
 
     // Importer la fonction au runtime pour éviter d'obliger l'API à charger firebase au démarrage
-    const { seedBooksToFirebase, initializeBooksIfEmpty } = await import('./src/seedBooks.js');
+    let seedModule;
+    try {
+      seedModule = await import('./src/seedBooks.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module seed:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
+
+    const { seedBooksToFirebase, initializeBooksIfEmpty } = seedModule;
     const mode = req.query.mode === 'forced' ? 'forced' : 'if-empty';
 
     if (mode === 'forced') {
@@ -134,14 +169,22 @@ app.post('/api/seed', async (req, res) => {
     const result = await initializeBooksIfEmpty('Bibliothécaire');
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erreur lors du seed:', error);
+    res.status(500).json({ error: error.message || 'Erreur serveur inconnue' });
   }
 });
 
 // Mettre à jour un livre partiellement (stock, totalCopies, etc.)
 app.patch('/api/books/:id', async (req, res) => {
   try {
-    const dbSvc = await import('./src/services/databaseService.js');
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
+
     const bookId = req.params.id;
     const payload = req.body || {};
 
@@ -174,14 +217,22 @@ app.patch('/api/books/:id', async (req, res) => {
     const updated = await dbSvc.getBookById(bookId);
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erreur lors de la mise à jour du livre:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 });
 
 // Remplacer complètement un livre (PUT)
 app.put('/api/books/:id', async (req, res) => {
   try {
-    const dbSvc = await import('./src/services/databaseService.js');
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
+
     const bookId = req.params.id;
     const payload = req.body || {};
 
@@ -215,27 +266,35 @@ app.put('/api/books/:id', async (req, res) => {
     const updated = await dbSvc.getBookById(bookId);
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erreur lors de la mise à jour du livre:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 });
 
 // Supprimer un livre (DELETE)
 app.delete('/api/books/:id', async (req, res) => {
   try {
-    const dbSvc = await import('./src/services/databaseService.js');
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services: ' + importErr.message });
+    }
+
     const bookId = req.params.id;
 
     // Récupérer le livre existant
     const existing = await dbSvc.getBookById(bookId);
     if (!existing) return res.status(404).json({ error: 'Livre non trouvé' });
 
-    // Supprimer le livre via Firestore
-    const db = (await import('./src/firebase.js')).default.firestore();
-    await db.collection('books').doc(bookId).delete();
+    // Supprimer le livre via la fonction dédiée
+    await dbSvc.deleteBook('Bibliothécaire', bookId);
 
     res.json({ message: 'Livre supprimé avec succès', id: bookId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erreur lors de la suppression du livre:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 });
 
@@ -246,8 +305,17 @@ app.listen(PORT, async () => {
   // Initialisation automatique des livres au démarrage
   try {
     console.log('📚 Vérification de la base de données...');
-    const dbSvc = await import('./src/services/databaseService.js');
-    const seedModule = await import('./src/seedBooks.js');
+    let dbSvc;
+    let seedModule;
+    
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+      seedModule = await import('./src/seedBooks.js');
+    } catch (importErr) {
+      console.error('⚠️ Erreur lors de l\'import des modules au démarrage:', importErr);
+      console.log('⚠️ Les services Firebase seront initialisés lors du premier appel API');
+      return;
+    }
     
     const existingBooks = await dbSvc.getAllBooks();
     if (!existingBooks || existingBooks.length === 0) {

@@ -21,6 +21,15 @@ export default function Home({ isLoggedIn, addToCart }) {
       if (categoryFilter) url += `&category=${encodeURIComponent(categoryFilter)}`;
       
       const res = await fetch(url);
+      
+      // Vérifier le statut HTTP
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Erreur HTTP ${res.status}:`, errorText);
+        throw new Error(`Erreur serveur: ${res.status}`);
+      }
+      
+      // Essayer de parser le JSON
       const data = await res.json();
       setBooks(data.data || []);
     } catch (err) {

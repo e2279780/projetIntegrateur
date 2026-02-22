@@ -151,6 +151,24 @@ export const signupWithGoogle = async (role = 'Membre') => loginWithGoogle(role)
 
 export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);
 
+/**
+ * Récupérer le profil complet de l'utilisateur depuis Firestore
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<Object>} Profil utilisateur (role, firstName, lastName, etc.)
+ */
+export const getCurrentUserProfile = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) {
+      throw new Error('Profil utilisateur non trouvé');
+    }
+    return userDoc.data();
+  } catch (error) {
+    console.error('Erreur lors de la récupération du profil:', error.message);
+    throw new Error(error.message);
+  }
+};
+
 // --- CRUCIAL : Exportation de l'objet authService pour correspondre à tes composants ---
 export const authService = {
   signup,
@@ -159,5 +177,6 @@ export const authService = {
   updateUser, // Renommé pour correspondre à l'appel dans Profile.jsx
   loginWithGoogle,
   signupWithGoogle,
-  onAuthChange
+  onAuthChange,
+  getCurrentUserProfile,
 };

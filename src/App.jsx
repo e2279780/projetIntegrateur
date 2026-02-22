@@ -19,6 +19,7 @@ import Cart from './pages/Cart';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Frais from './pages/Frais';
+import Admin from './pages/Admin';
 import Checkout from './pages/Checkout'; // Import de la page de paiement du panier
 import BookDetail from './pages/BookDetail'; // Page de détail d'un livre avec ElegantCarousel
 import InitBooks from './pages/InitBooks'; // Page d'initialisation de la base de données
