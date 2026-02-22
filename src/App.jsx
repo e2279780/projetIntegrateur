@@ -3,10 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
-// Import du contexte utilisateur
-import { useUser } from './context/useUser';
-import { authService } from './services';
-
 import Navbar from './components/Navbar';
 import Loading from './components/Loading';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -25,16 +21,12 @@ import BookDetail from './pages/BookDetail'; // Page de détail d'un livre avec 
 import InitBooks from './pages/InitBooks'; // Page d'initialisation de la base de données
 
 export default function App() {
-  // Utilisation du contexte utilisateur Firebase
-  const { user, loading: authLoading, role } = useUser();
-  
-  // Dériver isLoggedIn de l'état utilisateur Firebase
-  const isLoggedIn = !!user;
-  
+  const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutToast, setShowLogoutToast] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
-  const [initialLoading, setInitialLoading] = useState(true);
   
   const [promoCode, setPromoCode] = useState({ 
     code: "MAISONNEUVE20", 
@@ -42,9 +34,8 @@ export default function App() {
     active: false 
   });
 
-  // Simulation du chargement initial (2 secondes)
   useEffect(() => {
-    const timer = setTimeout(() => setInitialLoading(false), 1500);
+    const timer = setTimeout(() => setLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -55,19 +46,41 @@ export default function App() {
     }
   }, [showLogoutToast]);
 
-  // Logique de déconnexion avec animation
-  const handleLogout = async () => {
+  const handleLogin = (email, role = 'Membre') => {
+    // 1. Sécurité : si l'email n'existe pas, on arrête tout
+    if (!email || typeof email !== 'string') return;
+
+    setIsLoggedIn(true);
+    
+    // 2. Sécurité : on vérifie la présence du @ avant de découper
+    const emailPrefix = email.includes('@') ? email.split('@')[0] : "Utilisateur";
+    const formattedName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+
+    setUser({ 
+      email: email, 
+      role: role,
+      name: formattedName 
+    });
+    setShowLogoutToast(false);
+  };
+
+  // --- NOUVEAU : Fonction pour mettre à jour l'user dans le state global ---
+  const handleUpdateUser = (updatedData) => {
+    setUser(prev => ({
+      ...prev,
+      ...updatedData
+    }));
+  };
+
+  const handleLogout = () => {
     setIsLoggingOut(true);
-    try {
-      await authService.logout();
+    setTimeout(() => {
+      setIsLoggedIn(false);
+      setUser(null);
       setCart([]);
-      setPromoCode({ ...promoCode, active: false });
-      setShowLogoutToast(true);
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-    } finally {
       setIsLoggingOut(false);
-    }
+      setShowLogoutToast(true);
+    }, 1500);
   };
 
   const addToCart = (book, quantity = 1) => {
@@ -104,8 +117,7 @@ export default function App() {
     return false;
   };
 
-  // Afficher le loading pendant le chargement initial ou la déconnexion
-  if (initialLoading || authLoading || isLoggingOut) {
+  if (loading || isLoggingOut) {
     return <Loading message={isLoggingOut ? "Déconnexion sécurisée..." : "BiblioConnect charge..."} />;
   }
 
@@ -139,14 +151,15 @@ export default function App() {
             <Route path="/" element={<Home isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
             <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
             <Route path="/book/:bookId" element={<BookDetail />} />
-            <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/signup" element={!isLoggedIn ? <Signup /> : <Navigate to="/dashboard" />} />
+            
+            <Route path="/login" element={!isLoggedIn ? <Login onLogin={handleLogin} /> : <Navigate to={user?.role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
+            <Route path="/signup" element={!isLoggedIn ? <Signup onLogin={handleLogin} /> : <Navigate to={user?.role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
             
             <Route path="/frais" element={<Frais />} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Dashboard user={user} role={role} />
+                <Dashboard user={user} />
               </ProtectedRoute>
             } />
 
@@ -158,7 +171,8 @@ export default function App() {
 
             <Route path="/profile" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Profile user={user} />
+                {/* Passage de handleUpdateUser pour que le profil puisse mettre à jour App.jsx */}
+                <Profile user={user} onUpdateUser={handleUpdateUser} />
               </ProtectedRoute>
             } />
 
