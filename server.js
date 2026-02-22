@@ -138,7 +138,7 @@ app.post('/api/seed', async (req, res) => {
   }
 });
 
-// Mettre à jour un livre (stock, totalCopies, etc.)
+// Mettre à jour un livre partiellement (stock, totalCopies, etc.)
 app.patch('/api/books/:id', async (req, res) => {
   try {
     const dbSvc = await import('./src/services/databaseService.js');
@@ -173,6 +173,67 @@ app.patch('/api/books/:id', async (req, res) => {
 
     const updated = await dbSvc.getBookById(bookId);
     res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Remplacer complètement un livre (PUT)
+app.put('/api/books/:id', async (req, res) => {
+  try {
+    const dbSvc = await import('./src/services/databaseService.js');
+    const bookId = req.params.id;
+    const payload = req.body || {};
+
+    // Récupérer le livre existant
+    const existing = await dbSvc.getBookById(bookId);
+    if (!existing) return res.status(404).json({ error: 'Livre non trouvé' });
+
+    // Validation des champs obligatoires
+    const requiredFields = ['title', 'author', 'isbn'];
+    for (const field of requiredFields) {
+      if (!payload[field]) {
+        return res.status(400).json({ error: `Champ obligatoire manquant: ${field}` });
+      }
+    }
+
+    const updates = {
+      title: payload.title,
+      author: payload.author,
+      isbn: payload.isbn,
+      category: payload.category || existing.category,
+      language: payload.language || existing.language,
+      description: payload.description || existing.description,
+      cover: payload.cover || existing.cover,
+      totalCopies: typeof payload.totalCopies === 'number' ? payload.totalCopies : existing.totalCopies,
+      availableCopies: typeof payload.availableCopies === 'number' ? payload.availableCopies : existing.availableCopies
+    };
+
+    // Appeler la mise à jour en tant que 'Bibliothécaire' côté serveur
+    await dbSvc.updateBook('Bibliothécaire', bookId, updates);
+
+    const updated = await dbSvc.getBookById(bookId);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supprimer un livre (DELETE)
+app.delete('/api/books/:id', async (req, res) => {
+  try {
+    const dbSvc = await import('./src/services/databaseService.js');
+    const bookId = req.params.id;
+
+    // Récupérer le livre existant
+    const existing = await dbSvc.getBookById(bookId);
+    if (!existing) return res.status(404).json({ error: 'Livre non trouvé' });
+
+    // Supprimer le livre via Firestore
+    const db = (await import('./src/firebase.js')).default.firestore();
+    await db.collection('books').doc(bookId).delete();
+
+    res.json({ message: 'Livre supprimé avec succès', id: bookId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
