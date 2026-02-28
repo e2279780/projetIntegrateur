@@ -4,10 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, faThLarge, 
   faBookOpen, faTimes, faFilter, 
-  faFire, faHistory, faGraduationCap, faGem, faBook, faStar
+  faFire, faHistory, faGraduationCap, faGem, faStar
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Inventory({ isLoggedIn, addToCart }) {
+export default function Inventory({ isLoggedIn, userId, onBorrow }) {
   const [books, setBooks] = useState([]);
   const [totalBooks, setTotalBooks] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -150,8 +150,9 @@ export default function Inventory({ isLoggedIn, addToCart }) {
                   <BookCard 
                     key={book.id} 
                     book={book} 
-                    isLoggedIn={isLoggedIn} 
-                    onAdd={() => addToCart(book)} 
+                    isLoggedIn={isLoggedIn}
+                    userId={userId}
+                    onBorrow={onBorrow} 
                   />
                 ))
               ) : (

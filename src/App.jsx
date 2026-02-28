@@ -11,12 +11,10 @@ import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Cart from './pages/Cart';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Frais from './pages/Frais';
 import Admin from './pages/Admin';
-import Checkout from './pages/Checkout'; // Import de la page de paiement du panier
 import BookDetail from './pages/BookDetail'; // Page de détail d'un livre avec ElegantCarousel
 import InitBooks from './pages/InitBooks'; // Page d'initialisation de la base de données
 
@@ -26,13 +24,7 @@ export default function App() {
   const [showLogoutToast, setShowLogoutToast] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [cart, setCart] = useState([]);
-  
-  const [promoCode, setPromoCode] = useState({ 
-    code: "MAISONNEUVE20", 
-    discount: 0.20, 
-    active: false 
-  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2000);
@@ -77,44 +69,14 @@ export default function App() {
     setTimeout(() => {
       setIsLoggedIn(false);
       setUser(null);
-      setCart([]);
       setIsLoggingOut(false);
       setShowLogoutToast(true);
     }, 1500);
   };
 
-  const addToCart = (book, quantity = 1) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === book.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === book.id ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
-      return [...prevCart, { ...book, quantity }];
-    });
-  };
-
-  const removeFromCart = (id) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
-  };
-
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) {
-      removeFromCart(id);
-      return;
-    }
-    setCart((prevCart) =>
-      prevCart.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
-    );
-  };
-
-  const applyPromo = (inputCode) => {
-    if (inputCode && inputCode.toUpperCase() === promoCode.code) {
-      setPromoCode({ ...promoCode, active: true });
-      return true;
-    }
-    return false;
+  const handleBorrowSuccess = () => {
+    // Rafraîchir les emprunts du Dashboard
+    setRefreshTrigger(prev => prev + 1);
   };
 
   if (loading || isLoggingOut) {
@@ -141,15 +103,14 @@ export default function App() {
 
         <Navbar 
           isLoggedIn={isLoggedIn} 
-          cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)} 
           user={user} 
           onLogout={handleLogout} 
         />
 
         <main className="flex-1 flex flex-col">
           <Routes>
-            <Route path="/" element={<Home isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
-            <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} addToCart={addToCart} />} />
+            <Route path="/" element={<Home isLoggedIn={isLoggedIn} userId={user?.email} onBorrow={handleBorrowSuccess} />} />
+            <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} userId={user?.email} onBorrow={handleBorrowSuccess} />} />
             <Route path="/book/:bookId" element={<BookDetail />} />
             
             <Route path="/login" element={!isLoggedIn ? <Login onLogin={handleLogin} /> : <Navigate to={user?.role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
@@ -159,7 +120,7 @@ export default function App() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Dashboard user={user} />
+                <Dashboard user={user} refreshTrigger={refreshTrigger} />
               </ProtectedRoute>
             } />
 
@@ -179,24 +140,6 @@ export default function App() {
             <Route path="/init-books" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <InitBooks />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/checkout" element={
-              <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Checkout cartItems={cart} />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/cart" element={
-              <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Cart 
-                  cartItems={cart} 
-                  onRemove={removeFromCart} 
-                  onUpdateQuantity={updateQuantity}
-                  promo={promoCode}
-                  onApplyPromo={applyPromo}
-                />
               </ProtectedRoute>
             } />
 

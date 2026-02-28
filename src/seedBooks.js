@@ -72,7 +72,7 @@ export const booksDatabase = [
     publisher: "Addison-Wesley",
     yearPublished: 1994,
     language: "En",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Design+Patterns",
+    coverImageUrl: "https://placehold.co/300x400?text=Design+Patterns&bg=e5e7eb&textColor=666",
     keywords: ["patterns", "conception", "architéture", "réutilisable"],
   },
   {
@@ -87,7 +87,7 @@ export const booksDatabase = [
     publisher: "Microsoft Press",
     yearPublished: 2004,
     language: "En",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Code+Complete",
+    coverImageUrl: "https://placehold.co/300x400?text=Code+Complete&bg=e5e7eb&textColor=666",
     keywords: ["développement", "qualité", "construction", "logiciel"],
   },
 
@@ -104,7 +104,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 1954,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Seigneur+des+Anneaux",
+    coverImageUrl: "https://placehold.co/300x400?text=Seigneur+des+Anneaux&bg=e5e7eb&textColor=666",
     keywords: ["fantasy", "épopée", "quête", "magie"],
   },
   {
@@ -119,7 +119,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 1998,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Harry+Potter",
+    coverImageUrl: "https://placehold.co/300x400?text=Harry+Potter&bg=e5e7eb&textColor=666",
     keywords: ["harry potter", "fantasy", "jeunesse", "magie", "sorcellerie"],
   },
   {
@@ -134,7 +134,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 1862,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Les+Miserables",
+    coverImageUrl: "https://placehold.co/300x400?text=Les+Miserables&bg=e5e7eb&textColor=666",
     keywords: ["classique", "drame", "justice", "rédemption"],
   },
   {
@@ -149,7 +149,7 @@ export const booksDatabase = [
     publisher: "Penguin Books",
     yearPublished: 1949,
     language: "En",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=1984",
+    coverImageUrl: "https://placehold.co/300x400?text=1984&bg=e5e7eb&textColor=666",
     keywords: ["dystopie", "totalitarisme", "société", "futur"],
   },
   {
@@ -164,7 +164,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 1937,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Le+Hobbit",
+    coverImageUrl: "https://placehold.co/300x400?text=Le+Hobbit&bg=e5e7eb&textColor=666",
     keywords: ["fantasy", "aventure", "quête", "dragon"],
   },
 
@@ -181,7 +181,7 @@ export const booksDatabase = [
     publisher: "Odile Jacob",
     yearPublished: 1988,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Histoire+du+temps",
+    coverImageUrl: "https://placehold.co/300x400?text=Histoire+du+temps&bg=e5e7eb&textColor=666",
     keywords: ["science", "univers", "physique", "cosmologie"],
   },
   {
@@ -196,7 +196,7 @@ export const booksDatabase = [
     publisher: "Albin Michel",
     yearPublished: 2011,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Sapiens",
+    coverImageUrl: "https://placehold.co/300x400?text=Sapiens&bg=e5e7eb&textColor=666",
     keywords: ["histoire", "humanité", "évolution", "société"],
   },
   {
@@ -211,7 +211,7 @@ export const booksDatabase = [
     publisher: "Le Seuil",
     yearPublished: 1989,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Revolution+Francaise",
+    coverImageUrl: "https://placehold.co/300x400?text=Revolution+Francaise&bg=e5e7eb&textColor=666",
     keywords: ["histoire", "france", "révolution", "politique"],
   },
 
@@ -228,7 +228,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 170,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Pensees+pour+moi",
+    coverImageUrl: "https://placehold.co/300x400?text=Pensees+pour+moi&bg=e5e7eb&textColor=666",
     keywords: ["philosophie", "stoïcisme", "sagesse", "réflexion"],
   },
   {
@@ -243,7 +243,7 @@ export const booksDatabase = [
     publisher: "Nathan",
     yearPublished: 2018,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Atomic+Habits",
+    coverImageUrl: "https://placehold.co/300x400?text=Atomic+Habits&bg=e5e7eb&textColor=666",
     keywords: ["habitudes", "développement", "productivité", "transformation"],
   },
   {
@@ -258,7 +258,7 @@ export const booksDatabase = [
     publisher: "Ada",
     yearPublished: 2006,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Loi+Attraction",
+    coverImageUrl: "https://placehold.co/300x400?text=Loi+Attraction&bg=e5e7eb&textColor=666",
     keywords: ["développement", "mentalité", "attraction", "réussite"],
   },
 
@@ -275,7 +275,7 @@ export const booksDatabase = [
     publisher: "Seuil",
     yearPublished: 1991,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Monde+Sophie",
+    coverImageUrl: "https://placehold.co/300x400?text=Monde+Sophie&bg=e5e7eb&textColor=666",
     keywords: ["philosophie", "roman", "éducation", "questionnement"],
   },
   {
@@ -290,7 +290,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 1988,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Silence+Agneaux",
+    coverImageUrl: "https://placehold.co/300x400?text=Silence+Agneaux&bg=e5e7eb&textColor=666",
     keywords: ["thriller", "crime", "psychologie", "suspense"],
   },
 
@@ -307,7 +307,7 @@ export const booksDatabase = [
     publisher: "Le Livre de Poche",
     yearPublished: 1950,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Narnia",
+    coverImageUrl: "https://placehold.co/300x400?text=Narnia&bg=e5e7eb&textColor=666",
     keywords: ["fantasy", "jeunesse", "aventure", "magie", "monde"],
   },
   {
@@ -322,7 +322,7 @@ export const booksDatabase = [
     publisher: "Albin Michel Jeunesse",
     yearPublished: 2005,
     language: "Fr",
-    coverImageUrl: "https://via.placeholder.com/300x400?text=Percy+Jackson",
+    coverImageUrl: "https://placehold.co/300x400?text=Percy+Jackson&bg=e5e7eb&textColor=666",
     keywords: ["jeunesse", "mythology", "aventure", "fantasy"],
   },
 ];
@@ -477,3 +477,5 @@ export default {
   booksDatabase,
   booksStats,
 };
+
+

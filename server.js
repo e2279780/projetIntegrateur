@@ -15,6 +15,15 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Biblioconnect API' });
 });
 
+// Fonction utilitaire pour corriger les URLs des images
+const fixImageUrl = (url) => {
+  if (!url) return 'https://placehold.co/300x450?text=Livre&bg=e5e7eb&textColor=666';
+  if (url.includes('via.placeholder.com')) {
+    return url.replace('https://via.placeholder.com', 'https://placehold.co');
+  }
+  return url;
+};
+
 // Retourne tous les livres (données statiques de l'application)
 app.get('/api/books', async (req, res) => {
   try {
@@ -35,6 +44,13 @@ app.get('/api/books', async (req, res) => {
       await seedModule.initializeBooksIfEmpty('Bibliothécaire');
       results = await dbSvc.getAllBooks();
     }
+
+    // Corriger les URLs des images invalides
+    results = results.map(book => ({
+      ...book,
+      coverImageUrl: fixImageUrl(book.coverImageUrl),
+      coverUrl: fixImageUrl(book.coverUrl)
+    }));
 
     // Query params: q (search), category, language, page, limit
     const q = (req.query.q || '').toString().toLowerCase().trim();
@@ -295,6 +311,83 @@ app.delete('/api/books/:id', async (req, res) => {
   } catch (err) {
     console.error('Erreur lors de la suppression du livre:', err);
     res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
+  }
+});
+
+// ============= ROUTES EMPRUNT =============
+
+// POST /api/borrows - Créer un emprunt
+app.post('/api/borrows', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { userId, bookId, daysToKeep } = req.body;
+
+    if (!userId || !bookId) {
+      return res.status(400).json({ error: 'userId et bookId sont requis' });
+    }
+
+    const borrowId = await dbSvc.createBorrow(userId, bookId, daysToKeep || 14);
+    res.status(201).json({ success: true, borrowId });
+  } catch (err) {
+    console.error('Erreur lors de la création de l\'emprunt:', err);
+    res.status(400).json({ error: err.message || 'Erreur lors de la création de l\'emprunt' });
+  }
+});
+
+// GET /api/borrows/:userId - Récupérer les emprunts actifs d'un utilisateur
+app.get('/api/borrows/:userId', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { userId } = req.params;
+    const borrows = await dbSvc.getActiveUserBorrows(userId);
+    
+    // Récupérer les détails des livres pour chaque emprunt
+    const borrowsWithBooks = await Promise.all(
+      borrows.map(async (borrow) => {
+        const book = await dbSvc.getBookById(borrow.bookId);
+        return { ...borrow, book };
+      })
+    );
+
+    res.json(borrowsWithBooks);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des emprunts:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur' });
+  }
+});
+
+// DELETE /api/borrows/:borrowId - Retourner un livre emprunté
+app.delete('/api/borrows/:borrowId', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { borrowId } = req.params;
+    await dbSvc.returnBorrow(borrowId);
+    
+    res.json({ success: true, message: 'Livre retourné avec succès' });
+  } catch (err) {
+    console.error('Erreur lors du retour du livre:', err);
+    res.status(400).json({ error: err.message || 'Erreur lors du retour du livre' });
   }
 });
 

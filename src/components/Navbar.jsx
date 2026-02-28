@@ -3,13 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faBook, 
-  faShoppingCart, 
   faUserCircle, 
   faSignOutAlt, 
   faChalkboardTeacher 
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
+export default function Navbar({ isLoggedIn, user, onLogout }) {
   const navigate = useNavigate();
 
   // Sécurité : on définit un nom par défaut si l'objet user est en cours de chargement
@@ -29,16 +28,6 @@ export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
           
           {isLoggedIn ? (
             <>
-              {/* Panier */}
-              <Link to="/cart" className="relative p-2 hover:bg-slate-800 rounded-full transition">
-                <FontAwesomeIcon icon={faShoppingCart} className="text-xl" />
-                {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-slate-900">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-
               {/* Menu Profil */}
               <div className="group relative">
                 {/* Bouton Profil sécurisé avec ?. */}

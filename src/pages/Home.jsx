@@ -6,7 +6,7 @@ import {
   faArrowRight, faGraduationCap, faCompass, faQuoteLeft
 } from '@fortawesome/free-solid-svg-icons';
 
-export default function Home({ isLoggedIn, addToCart }) {
+export default function Home({ isLoggedIn, userId, onBorrow }) {
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -162,7 +162,7 @@ export default function Home({ isLoggedIn, addToCart }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
                 {books.length > 0 ? (
                   books.map(b => (
-                    <BookCard key={b.id} book={b} isLoggedIn={isLoggedIn} onAdd={() => addToCart(b)} />
+                    <BookCard key={b.id} book={b} isLoggedIn={isLoggedIn} userId={userId} onBorrow={onBorrow} />
                   ))
                 ) : (
                   <div className="col-span-full py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-100 flex flex-col items-center text-gray-400">

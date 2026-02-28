@@ -2,24 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faPlus, faMinus, faInfoCircle, faLock, faSignInAlt, faTimes, 
-  faCheckCircle, faShoppingBag, faStar
+  faInfoCircle, faLock, faSignInAlt, faTimes, 
+  faCheckCircle, faBook, faStar
 } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * BookCard - Composant pour afficher un livre
  * Supporte les données provenant de Firebase (format local)
  */
-export default function BookCard({ book, isLoggedIn, onAdd }) {
+export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
   const [showModal, setShowModal] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  // Extraction des données du livre (format Firebase)
   // Extraction des données du livre (format Firebase)
   const title = book.title || 'Titre inconnu';
   const author = book.author || 'Auteur inconnu';
   const description = book.description || 'Pas de description disponible.';
-  const coverUrl = book.coverImageUrl || book.coverUrl || 'https://via.placeholder.com/300x450?text=Livre';
+  const coverUrl = book.coverImageUrl || book.coverUrl || 'https://placehold.co/300x450?text=Livre&bg=e5e7eb&textColor=666';
   const category = book.category || 'Général';
   const rating = book.rating || null;
   const pages = book.pages || null;
@@ -34,22 +36,47 @@ export default function BookCard({ book, isLoggedIn, onAdd }) {
     }
   }, [showNotification]);
 
-  const handleAdd = () => {
-    onAdd(book, quantity);
-    setShowNotification(true);
-    setShowModal(false);
-    setQuantity(1);
+  const handleBorrow = async () => {
+    if (!userId || !bookId) return;
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch('/api/borrows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, bookId, daysToKeep: 14 })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de l\'emprunt');
+      }
+
+      setShowNotification(true);
+      setShowModal(false);
+      
+      // Appeler le callback si fourni
+      if (onBorrow) {
+        onBorrow(book);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <>
-      {/* NOTIFICATION D'AJOUT */}
+      {/* NOTIFICATION D'EMPRUNT RÉUSSI */}
       {showNotification && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="bg-emerald-500 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-emerald-400">
             <FontAwesomeIcon icon={faCheckCircle} />
             <p className="font-black text-xs uppercase tracking-widest">
-              {quantity > 1 ? `${quantity} exemplaires ajoutés` : "Ajouté au panier !"}
+              Livre emprunté ! Disponible 14 jours.
             </p>
           </div>
         </div>
@@ -62,7 +89,7 @@ export default function BookCard({ book, isLoggedIn, onAdd }) {
             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-500/20">
               <FontAwesomeIcon icon={faLock} />
             </div>
-            <p className="text-white font-black text-xs uppercase tracking-[0.2em] mb-6">Connectez-vous pour acheter</p>
+            <p className="text-white font-black text-xs uppercase tracking-[0.2em] mb-6">Connectez-vous pour emprunter</p>
             <Link to="/login" className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2">
               <FontAwesomeIcon icon={faSignInAlt} /> Connexion
             </Link>
@@ -74,7 +101,7 @@ export default function BookCard({ book, isLoggedIn, onAdd }) {
             src={coverUrl} 
             alt={title} 
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=Livre'; }}
+            onError={(e) => { e.target.src = 'https://placehold.co/300x450?text=Livre&bg=e5e7eb&textColor=666'; }}
           />
           {/* Badge disponibilité */}
           {availableCopies > 0 && (
@@ -113,9 +140,9 @@ export default function BookCard({ book, isLoggedIn, onAdd }) {
             {isLoggedIn && availableCopies > 0 && (
               <button 
                 onClick={() => setShowModal(true)}
-                className="bg-emerald-500 text-white w-12 h-12 rounded-2xl hover:bg-emerald-600 transition shadow-lg"
+                className="bg-blue-600 text-white w-12 h-12 rounded-2xl hover:bg-blue-700 transition shadow-lg"
               >
-                <FontAwesomeIcon icon={faPlus} />
+                <FontAwesomeIcon icon={faBook} />
               </button>
             )}
           </div>
@@ -172,36 +199,35 @@ export default function BookCard({ book, isLoggedIn, onAdd }) {
               {/* Description */}
               <p className="text-slate-600 leading-relaxed mb-8">{description}</p>
 
-              {/* SÉLECTEUR DE QUANTITÉ */}
-              {isLoggedIn && availableCopies > 0 && (
-                <div className="bg-gray-50 p-6 rounded-[2.5rem] mb-8 border border-gray-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Quantité souhaitée</p>
-                  <div className="flex items-center justify-center gap-6">
-                    <button 
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 text-slate-400 hover:text-red-500 transition"
-                    >
-                      <FontAwesomeIcon icon={faMinus} />
-                    </button>
-                    <span className="text-3xl font-black text-slate-900 w-12 text-center">{quantity}</span>
-                    <button 
-                      onClick={() => setQuantity(Math.min(availableCopies, quantity + 1))}
-                      className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 text-slate-400 hover:text-blue-600 transition"
-                    >
-                      <FontAwesomeIcon icon={faPlus} />
-                    </button>
-                  </div>
+              {/* Message d'erreur s'il existe */}
+              {error && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4">
+                  <p className="text-red-700 font-bold text-sm">{error}</p>
                 </div>
               )}
 
               <div className="flex flex-col gap-4">
                 {isLoggedIn && availableCopies > 0 && (
                   <button 
-                    onClick={handleAdd} 
-                    className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition flex items-center justify-center gap-3 shadow-xl shadow-emerald-100"
+                    onClick={handleBorrow}
+                    disabled={isLoading}
+                    className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition flex items-center justify-center gap-3 shadow-xl shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <FontAwesomeIcon icon={faShoppingBag} /> Ajouter au panier
+                    <FontAwesomeIcon icon={faBook} /> {isLoading ? 'Emprunt en cours...' : 'Emprunter (14 jours)'}
                   </button>
+                )}
+                {!isLoggedIn && (
+                  <Link 
+                    to="/login" 
+                    className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition flex items-center justify-center gap-3 shadow-xl shadow-blue-200"
+                  >
+                    <FontAwesomeIcon icon={faSignInAlt} /> Se connecter pour emprunter
+                  </Link>
+                )}
+                {availableCopies <= 0 && (
+                  <div className="w-full bg-red-50 text-red-700 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
+                    <FontAwesomeIcon icon={faTimes} /> Ce livre n'est pas disponible
+                  </div>
                 )}
                 {bookId && (
                   <Link 

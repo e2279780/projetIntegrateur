@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faShoppingCart, faBookmark, faCheckCircle, faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faBook, faCheckCircle, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
 import ElegantCarousel from '../components/ElegantCarousel';
 import { databaseService } from '../services';
 import Loading from '../components/Loading';
 
 /**
  * BookDetail - Page de détail d'un livre avec carousel elegant
- * Affiche les informations complètes du livre et permet de l'ajouter au panier
+ * Permet à l'utilisateur d'emprunter le livre
  */
-export default function BookDetail({ addToCart, isLoggedIn }) {
+export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
   const { bookId } = useParams();
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [addedToCart, setAddedToCart] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [borrowSuccess, setBorrowSuccess] = useState(false);
 
   useEffect(() => {
     const loadBook = async () => {
@@ -36,11 +36,35 @@ export default function BookDetail({ addToCart, isLoggedIn }) {
     loadBook();
   }, [bookId]);
 
-  const handleAddToCart = () => {
-    if (addToCart && book) {
-      addToCart(book, quantity);
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 3000);
+  const handleBorrow = async () => {
+    if (!userId || !bookId || !isLoggedIn) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/borrows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, bookId, daysToKeep: 14 })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de l\'emprunt');
+      }
+
+      setBorrowSuccess(true);
+      
+      // Appeler le callback si fourni
+      if (onBorrow) {
+        onBorrow(book);
+      }
+
+      // Redirection vers le dashboard après 2 secondes
+      setTimeout(() => navigate('/dashboard'), 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -90,7 +114,7 @@ export default function BookDetail({ addToCart, isLoggedIn }) {
       isbn: book.isbn || 'N/A',
       title: book.title,
       author: book.author,
-      imageUrl: book.coverUrl || 'https://via.placeholder.com/400x600?text=Pas+d%27image',
+      imageUrl: book.coverUrl || 'https://placehold.co/400x600?text=Pas+d%27image&bg=e5e7eb&textColor=666',
       description: book.description,
       pages: book.pages,
       rating: book.rating,
@@ -100,7 +124,7 @@ export default function BookDetail({ addToCart, isLoggedIn }) {
       isbn: book.isbn || 'N/A',
       title: `À propos de l'auteur`,
       author: book.author,
-      imageUrl: book.coverUrl || 'https://via.placeholder.com/400x600',
+      imageUrl: book.coverUrl || 'https://placehold.co/400x600?bg=e5e7eb&textColor=666',
       description: `${book.author} est l'auteur de "${book.title}". Catégorie: ${book.category || 'Non spécifiée'}`,
       pages: book.pages,
       rating: book.rating,
@@ -199,43 +223,33 @@ export default function BookDetail({ addToCart, isLoggedIn }) {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              {/* Notification d'ajout */}
-              {addedToCart && (
+              {/* Notification de succès */}
+              {borrowSuccess && (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl flex items-center gap-3">
                   <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
-                  <span className="font-bold">Ajouté au panier !</span>
-                </div>
-              )}
-
-              {/* Sélecteur de quantité */}
-              {isLoggedIn && availableCopies > 0 && (
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Quantité</p>
-                  <div className="flex items-center justify-center gap-4">
-                    <button 
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-200 text-slate-400 hover:text-red-500 transition flex items-center justify-center"
-                    >
-                      <FontAwesomeIcon icon={faMinus} />
-                    </button>
-                    <span className="text-2xl font-black text-slate-900 w-10 text-center">{quantity}</span>
-                    <button 
-                      onClick={() => setQuantity(Math.min(availableCopies, quantity + 1))}
-                      className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-200 text-slate-400 hover:text-blue-600 transition flex items-center justify-center"
-                    >
-                      <FontAwesomeIcon icon={faPlus} />
-                    </button>
+                  <div>
+                    <span className="font-bold">Livre emprunté !</span>
+                    <p className="text-xs">Redirection vers votre dashboard...</p>
                   </div>
                 </div>
               )}
 
-              {isLoggedIn && availableCopies > 0 && (
+              {/* Afficher les erreurs d'emprunt */}
+              {error && !borrowSuccess && (
+                <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-2xl">
+                  <p className="font-bold text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Bouton Emprunter */}
+              {isLoggedIn && availableCopies > 0 && !borrowSuccess && (
                 <button
-                  onClick={handleAddToCart}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-emerald-200 flex items-center justify-center gap-3"
+                  onClick={handleBorrow}
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-blue-200 flex items-center justify-center gap-3"
                 >
-                  <FontAwesomeIcon icon={faShoppingCart} />
-                  Ajouter au panier
+                  <FontAwesomeIcon icon={faBook} />
+                  {isLoading ? 'Emprunt en cours...' : 'Emprunter (14 jours)'}
                 </button>
               )}
 
@@ -244,16 +258,16 @@ export default function BookDetail({ addToCart, isLoggedIn }) {
                   href="/login"
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-blue-200 flex items-center justify-center gap-3"
                 >
-                  Connectez-vous pour acheter
+                  <FontAwesomeIcon icon={faSignInAlt} />
+                  Se connecter pour emprunter
                 </a>
               )}
 
-              <button
-                className="w-full bg-white border-2 border-gray-300 hover:border-blue-400 text-slate-800 py-4 rounded-2xl font-bold transition shadow-lg flex items-center justify-center gap-3"
-              >
-                <FontAwesomeIcon icon={faBookmark} />
-                Ajouter à mes favoris
-              </button>
+              {availableCopies === 0 && (
+                <div className="w-full bg-red-50 border-2 border-red-200 text-red-700 py-4 rounded-2xl font-black text-lg transition flex items-center justify-center gap-3">
+                  Ce livre n'est pas disponible
+                </div>
+              )}
             </div>
 
             {/* Info Message */}

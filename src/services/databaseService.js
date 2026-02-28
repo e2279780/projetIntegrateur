@@ -271,18 +271,22 @@ export const returnBorrow = async (borrowId) => {
  */
 export const getActiveUserBorrows = async (userId) => {
   try {
+    // Requête minimale pour éviter les index composites Firestore
+    // Simple where sans orderBy - tri côté client
     const q = query(
       collection(db, 'borrows'),
-      where('userId', '==', userId),
-      where('returnDate', '==', null),
-      orderBy('borrowDate', 'desc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Filtrer les emprunts actifs et trier côté client
+    return querySnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter(borrow => !borrow.returnDate) // Garder seulement les emprunts non retournés
+      .sort((a, b) => (b.borrowDate?.toMillis?.() || 0) - (a.borrowDate?.toMillis?.() || 0)); // Tri décroissant
   } catch (error) {
     console.error('Erreur lors de la récupération des emprunts actifs:', error.message);
     throw new Error(error.message);
@@ -296,17 +300,19 @@ export const getActiveUserBorrows = async (userId) => {
  */
 export const getUserBorrowHistory = async (userId) => {
   try {
+    // Requête minimale sans orderBy pour éviter les index composites
     const q = query(
       collection(db, 'borrows'),
-      where('userId', '==', userId),
-      orderBy('borrowDate', 'desc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    return querySnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => (b.borrowDate?.toMillis?.() || 0) - (a.borrowDate?.toMillis?.() || 0)); // Tri décroissant côté client
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'historique:', error.message);
     throw new Error(error.message);
