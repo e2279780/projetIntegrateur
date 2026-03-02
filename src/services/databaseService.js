@@ -372,3 +372,128 @@ export const getOverdueBooks = async () => {
     throw new Error(error.message);
   }
 };
+
+/**
+ * Récupérer les informations d'un utilisateur par ID
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<Object>} Données utilisateur
+ */
+export const getUserById = async (userId) => {
+  try {
+    const docSnap = await getDoc(doc(db, 'users', userId));
+    
+    if (!docSnap.exists()) {
+      throw new Error('Utilisateur non trouvé');
+    }
+
+    return {
+      id: docSnap.id,
+      ...docSnap.data(),
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'utilisateur:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Mettre à jour un emprunt
+ * @param {string} borrowId - ID de l'emprunt
+ * @param {Object} updates - Données à mettre à jour
+ * @returns {Promise<void>}
+ */
+export const updateBorrow = async (borrowId, updates) => {
+  try {
+    await updateDoc(doc(db, 'borrows', borrowId), {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'emprunt:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Envoyer une notification à un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @param {Object} notification - Données de la notification
+ * @returns {Promise<string>} ID de la notification créée
+ */
+export const sendNotification = async (userId, notification) => {
+  try {
+    const docRef = await addDoc(collection(db, 'notifications'), {
+      userId,
+      title: notification.title || 'Alerte de la bibliothèque',
+      message: notification.message,
+      type: notification.type || 'alert', // alert, info, success, warning
+      read: false,
+      createdAt: Timestamp.now(),
+      bookId: notification.bookId || null,
+      borrowId: notification.borrowId || null,
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi de la notification:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Récupérer les notifications d'un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<Array>} Liste des notifications triées par date
+ */
+export const getUserNotifications = async (userId) => {
+  try {
+    // Pas de orderBy pour éviter les index composites
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    // Tri côté client pour éviter l'index
+    return querySnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+  } catch (error) {
+    console.error('Erreur lors de la récupération des notifications:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Marquer une notification comme lue
+ * @param {string} notificationId - ID de la notification
+ * @returns {Promise<void>}
+ */
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    await updateDoc(doc(db, 'notifications', notificationId), {
+      read: true,
+      readAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error('Erreur lors du marquage de la notification:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Supprimer une notification
+ * @param {string} notificationId - ID de la notification
+ * @returns {Promise<void>}
+ */
+export const deleteNotification = async (notificationId) => {
+  try {
+    await deleteDoc(doc(db, 'notifications', notificationId));
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la notification:', error.message);
+    throw new Error(error.message);
+  }
+};

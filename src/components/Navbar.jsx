@@ -8,6 +8,7 @@ import {
   faSignOutAlt, 
   faChalkboardTeacher 
 } from '@fortawesome/free-solid-svg-icons';
+import NotificationCenter from './NotificationCenter';
 
 export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
   const navigate = useNavigate();
@@ -29,6 +30,9 @@ export default function Navbar({ isLoggedIn, cartCount, user, onLogout }) {
           
           {isLoggedIn ? (
             <>
+              {/* Notifications */}
+              <NotificationCenter userId={user?.uid} />
+
               {/* Panier */}
               <Link to="/cart" className="relative p-2 hover:bg-slate-800 rounded-full transition">
                 <FontAwesomeIcon icon={faShoppingCart} className="text-xl" />

@@ -8,6 +8,7 @@ import {
   faCheckCircle, 
   faArrowLeft
 } from '@fortawesome/free-solid-svg-icons';
+import { getDaysRemaining } from '../utils/dateUtils';
 
 export default function Dashboard({ user, role, refreshTrigger }) {
   const [borrows, setBorrows] = useState([]);
@@ -73,50 +74,6 @@ export default function Dashboard({ user, role, refreshTrigger }) {
     } catch (err) {
       setError(err.message);
     }
-  };
-
-  /**
-   * getDaysRemaining - Calcule les jours restants de manière robuste
-   * Gère les formats : Timestamp Firebase, JSON (_seconds), ISO String et Date JS
-   */
-  const getDaysRemaining = (dateObj) => {
-    if (!dateObj) return 0;
-
-    let dueDate;
-    try {
-      // Cas 1 : Format JSON API Node (_seconds)
-      if (dateObj._seconds !== undefined) {
-        dueDate = new Date(dateObj._seconds * 1000);
-      } 
-      // Cas 2 : Format Firebase direct (.seconds)
-      else if (dateObj.seconds !== undefined) {
-        dueDate = new Date(dateObj.seconds * 1000);
-      }
-      // Cas 3 : Objet Timestamp avec méthode toDate()
-      else if (typeof dateObj.toDate === 'function') {
-        dueDate = dateObj.toDate();
-      } 
-      // Cas 4 : String ISO ou Date native
-      else {
-        dueDate = new Date(dateObj);
-      }
-
-      // Si la date est invalide (NaN), on sort
-      if (isNaN(dueDate.getTime())) return 0;
-
-    } catch (e) {
-      return 0;
-    }
-
-    // Normalisation à minuit pour ignorer les décalages d'heures (UTC-4/5)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const target = new Date(dueDate);
-    target.setHours(0, 0, 0, 0);
-
-    const diffTime = target.getTime() - today.getTime();
-    return Math.round(diffTime / (1000 * 60 * 60 * 24));
   };
 
   return (

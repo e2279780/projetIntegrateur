@@ -190,6 +190,51 @@ app.post('/api/seed', async (req, res) => {
   }
 });
 
+// Ajouter un nouveau livre
+app.post('/api/books', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const bookData = req.body;
+
+    // Validation minimale
+    if (!bookData.title || !bookData.author) {
+      return res.status(400).json({ error: 'Le titre et l\'auteur sont obligatoires' });
+    }
+
+    // Ajouter le livre via le service
+    const bookId = await dbSvc.addBook('Bibliothécaire', {
+      title: bookData.title,
+      author: bookData.author,
+      isbn: bookData.isbn || '',
+      category: bookData.category || 'Fiction',
+      description: bookData.description || '',
+      publisher: bookData.publisher || '',
+      yearPublished: bookData.yearPublished || new Date().getFullYear(),
+      pages: bookData.pages || 0,
+      language: bookData.language || 'Fr',
+      totalCopies: Math.max(1, bookData.totalCopies || 1),
+      coverImageUrl: bookData.coverImageUrl || '',
+      rating: Math.max(0, Math.min(5, parseFloat(bookData.rating) || 0)),
+    });
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Livre ajouté avec succès',
+      bookId 
+    });
+  } catch (err) {
+    console.error('Erreur lors de l\'ajout du livre:', err);
+    res.status(500).json({ error: err.message || 'Erreur lors de l\'ajout du livre' });
+  }
+});
+
 // Mettre à jour un livre partiellement (stock, totalCopies, etc.)
 app.patch('/api/books/:id', async (req, res) => {
   try {
@@ -388,6 +433,21 @@ app.delete('/api/borrows/:borrowId', async (req, res) => {
   } catch (err) {
     console.error('Erreur lors du retour du livre:', err);
     res.status(400).json({ error: err.message || 'Erreur lors du retour du livre' });
+  }
+});
+
+// Endpoint pour envoyer une alerte à un emprunteur (DEPRECATED - Utiliser les notifications Firebase à la place)
+// Les notifications sont maintenant gérées directement via Firestore
+app.post('/api/send-alert', async (req, res) => {
+  try {
+    res.json({ 
+      success: true, 
+      message: 'Endpoint déprécié - Les alertes sont maintenant envoyées via le système de notifications',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Erreur:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
