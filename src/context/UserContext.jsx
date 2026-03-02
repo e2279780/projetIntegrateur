@@ -16,34 +16,38 @@ export const UserProvider = ({ children }) => {
   const [role, setRole] = useState(null);
 
   useEffect(() => {
-    // Écouter les changements d'authentification
     const unsubscribe = authService.onAuthChange(async (authUser) => {
+      setLoading(true); // Re-passer en loading à chaque changement
       if (authUser) {
-        // Récupérer le profil complet
         try {
           const profile = await authService.getCurrentUserProfile(authUser.uid);
-          setUser({
-            uid: authUser.uid,
-            email: authUser.email,
-            ...profile,
-          });
-          setRole(profile.role);
+          if (profile) {
+            setUser({
+              uid: authUser.uid,
+              email: authUser.email,
+              ...profile,
+            });
+            setRole(profile.role);
+          }
         } catch (error) {
           console.error('Erreur lors de la récupération du profil:', error);
+          setUser(null);
+          setRole(null);
         }
       } else {
         setUser(null);
         setRole(null);
       }
-      setLoading(false);
+      setLoading(false); // Fin de la vérification
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   return (
     <UserContext.Provider value={{ user, loading, role }}>
-      {children}
+      {/* Ne pas afficher l'app tant que Firebase n'a pas répondu */}
+      {!loading ? children : <div className="flex items-center justify-center h-screen">Chargement...</div>}
     </UserContext.Provider>
   );
 };

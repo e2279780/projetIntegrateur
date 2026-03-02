@@ -7,6 +7,11 @@ import Navbar from './components/Navbar';
 import Loading from './components/Loading';
 import ProtectedRoute from './components/ProtectedRoute';
 
+// Services et Contexte
+import { authService } from './services'; 
+import { useUser } from './context/useUser';
+
+// Pages
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
@@ -15,22 +20,19 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Frais from './pages/Frais';
 import Admin from './pages/Admin';
-import BookDetail from './pages/BookDetail'; // Page de détail d'un livre avec ElegantCarousel
-import InitBooks from './pages/InitBooks'; // Page d'initialisation de la base de données
+import BookDetail from './pages/BookDetail'; 
+import InitBooks from './pages/InitBooks'; 
 
 export default function App() {
-  const [loading, setLoading] = useState(true);
+  // Utilisation exclusive du contexte pour la source de vérité
+  const { user, loading: authLoading, role } = useUser();
+  const isLoggedIn = !!user;
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutToast, setShowLogoutToast] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Gestion du Toast de déconnexion
   useEffect(() => {
     if (showLogoutToast) {
       const timer = setTimeout(() => setShowLogoutToast(false), 4000);
@@ -38,48 +40,32 @@ export default function App() {
     }
   }, [showLogoutToast]);
 
-  const handleLogin = (email, role = 'Membre') => {
-    // 1. Sécurité : si l'email n'existe pas, on arrête tout
-    if (!email || typeof email !== 'string') return;
-
-    setIsLoggedIn(true);
-    
-    // 2. Sécurité : on vérifie la présence du @ avant de découper
-    const emailPrefix = email.includes('@') ? email.split('@')[0] : "Utilisateur";
-    const formattedName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-
-    setUser({ 
-      email: email, 
-      role: role,
-      name: formattedName 
-    });
-    setShowLogoutToast(false);
-  };
-
-  // --- NOUVEAU : Fonction pour mettre à jour l'user dans le state global ---
-  const handleUpdateUser = (updatedData) => {
-    setUser(prev => ({
-      ...prev,
-      ...updatedData
-    }));
-  };
-
-  const handleLogout = () => {
+  /**
+   * handleLogout - Déconnexion réelle via Firebase
+   */
+  const handleLogout = async () => {
     setIsLoggingOut(true);
-    setTimeout(() => {
-      setIsLoggedIn(false);
-      setUser(null);
+    try {
+      // Appel au service Firebase pour détruire la session
+      await authService.logout(); 
+      
+      // Le UserProvider détectera automatiquement le changement via onAuthChange
+      setTimeout(() => {
+        setIsLoggingOut(false);
+        setShowLogoutToast(true);
+      }, 1500);
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
       setIsLoggingOut(false);
-      setShowLogoutToast(true);
-    }, 1500);
+    }
   };
 
   const handleBorrowSuccess = () => {
-    // Rafraîchir les emprunts du Dashboard
     setRefreshTrigger(prev => prev + 1);
   };
 
-  if (loading || isLoggingOut) {
+  // Bloquer le rendu tant que Firebase n'a pas confirmé l'état de l'utilisateur
+  if (authLoading || isLoggingOut) {
     return <Loading message={isLoggingOut ? "Déconnexion sécurisée..." : "BiblioConnect charge..."} />;
   }
 
@@ -87,6 +73,7 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
         
+        {/* Toast de confirmation de déconnexion */}
         {showLogoutToast && (
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="bg-slate-900/95 backdrop-blur-md text-white px-8 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border border-slate-700/50">
@@ -109,40 +96,43 @@ export default function App() {
 
         <main className="flex-1 flex flex-col">
           <Routes>
-            <Route path="/" element={<Home isLoggedIn={isLoggedIn} userId={user?.email} onBorrow={handleBorrowSuccess} />} />
-            <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} userId={user?.email} onBorrow={handleBorrowSuccess} />} />
-            <Route path="/book/:bookId" element={<BookDetail />} />
-            
-            <Route path="/login" element={!isLoggedIn ? <Login onLogin={handleLogin} /> : <Navigate to={user?.role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
-            <Route path="/signup" element={!isLoggedIn ? <Signup onLogin={handleLogin} /> : <Navigate to={user?.role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
-            
+            {/* Routes Publiques */}
+            <Route path="/" element={<Home isLoggedIn={isLoggedIn} userId={user?.uid} onBorrow={handleBorrowSuccess} />} />
+            <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} userId={user?.uid} onBorrow={handleBorrowSuccess} />} />
+            <Route path="/book/:bookId" element={<BookDetail isLoggedIn={isLoggedIn} userId={user?.uid} />} />
             <Route path="/frais" element={<Frais />} />
-
+            
+            {/* Authentification : Redirection si déjà connecté */}
+            <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to={role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
+            <Route path="/signup" element={!isLoggedIn ? <Signup /> : <Navigate to={role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
+            
+            {/* Routes Protégées (Utilisateur standard) */}
             <Route path="/dashboard" element={
-              <ProtectedRoute isLoggedIn={isLoggedIn}>
-                <Dashboard user={user} refreshTrigger={refreshTrigger} />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/admin" element={
-              <ProtectedRoute isLoggedIn={isLoggedIn}>
-                {user?.role === 'Bibliothécaire' ? <Admin /> : <Navigate to="/dashboard" />}
+              <ProtectedRoute>
+                <Dashboard user={user} userId = {user?.uid} refreshTrigger={refreshTrigger} />
               </ProtectedRoute>
             } />
 
             <Route path="/profile" element={
-              <ProtectedRoute isLoggedIn={isLoggedIn}>
-                {/* Passage de handleUpdateUser pour que le profil puisse mettre à jour App.jsx */}
-                <Profile user={user} onUpdateUser={handleUpdateUser} />
+              <ProtectedRoute>
+                <Profile user={user} />
+              </ProtectedRoute>
+            } />
+
+            {/* Routes Protégées (Administrateur uniquement) */}
+            <Route path="/admin" element={
+              <ProtectedRoute adminOnly={true}>
+                <Admin />
               </ProtectedRoute>
             } />
 
             <Route path="/init-books" element={
-              <ProtectedRoute isLoggedIn={isLoggedIn}>
+              <ProtectedRoute adminOnly={true}>
                 <InitBooks />
               </ProtectedRoute>
             } />
 
+            {/* Redirection par défaut */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>

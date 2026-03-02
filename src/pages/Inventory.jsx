@@ -16,10 +16,9 @@ export default function Inventory({ isLoggedIn, userId, onBorrow }) {
 
   const categories = [
     { id: '', label: 'Tous les livres', icon: faThLarge },
-    { id: 'Développement', label: 'Informatique', icon: faThLarge },
-    { id: 'Fantasy', label: 'Fantasy', icon: faBookOpen },
+    { id: 'BD', label: 'Bande dessinée', icon: faFire },
+    { id: 'Fantaisie', label: 'Fantaisie', icon: faBookOpen },
     { id: 'Histoire', label: 'Histoire', icon: faHistory },
-    { id: 'Sciences', label: 'Sciences', icon: faFire },
     { id: 'Classique', label: 'Classiques', icon: faStar },
     { id: 'Philosophie', label: 'Philosophie', icon: faGem }
   ];
@@ -27,7 +26,7 @@ export default function Inventory({ isLoggedIn, userId, onBorrow }) {
   const fetchBooks = async (searchQuery = '', category = '') => {
     setLoading(true);
     try {
-      let url = '/api/books?limit=20';
+      let url = '/api/books?limit=30';
       if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
       if (category) url += `&category=${encodeURIComponent(category)}`;
       

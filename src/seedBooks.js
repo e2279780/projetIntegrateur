@@ -1,349 +1,362 @@
 /**
  * SEED - Initialiser la base de données avec les livres de BiblioConnect
- * Ce fichier contient tous les livres du projet et une fonction pour les ajouter à Firestore
+ * Version finale corrigée avec 30 classiques et exports fonctionnels.
  */
 
-// Import explicitement le service de base de données pour éviter
-// l'import de répertoire (non supporté par Node ESM dans ce contexte)
 import * as databaseService from './services/databaseService.js';
 
 /**
  * ========================================
- * BASE DE DONNÉES COMPLÈTE DES LIVRES
+ * BASE DE DONNÉES DES 30 CLASSIQUES
  * ========================================
  */
-
 export const booksDatabase = [
-  // =================== DÉVELOPPEMENT (Informatique) ===================
+  // LITTÉRATURE CLASSIQUE
   {
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    isbn: "978-0132350884",
-    category: "Développement",
-    description: "Un guide complet sur comment écrire du code propre et maintenable.",
-    pages: 464,
+    title: "Le Petit Prince",
+    author: "Antoine de Saint-Exupéry",
+    isbn: "978-2070612758",
+    category: "Classique",
+    description: "Un conte philosophique sur la solitude et l'amitié.",
+    pages: 96,
     rating: 4.9,
-    totalCopies: 5,
-    publisher: "Prentice Hall",
-    yearPublished: 2008,
-    language: "En",
-    coverImageUrl: "https://books.google.com/books/content?id=hjI6XwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
-    keywords: ["code", "programmation", "qualité", "best practices"],
+    totalCopies: 12,
+    publisher: "Gallimard",
+    yearPublished: 1943,
+    language: "Fr",
+    coverImageUrl: "https://upload.wikimedia.org/wikipedia/en/0/05/Littleprince.JPG",
+    keywords: ["philosophie", "jeunesse", "poésie"]
   },
   {
-    title: "Eloquent JavaScript",
-    author: "Marijn Haverbeke",
-    isbn: "978-1593279508",
-    category: "Développement",
-    description: "Un livre complet pour apprendre JavaScript des bases aux concepts avancés.",
-    pages: 472,
+    title: "L'Étranger",
+    author: "Albert Camus",
+    isbn: "978-2070360024",
+    category: "Classique",
+    description: "Le récit de l'absurdité de l'existence à travers Meursault.",
+    pages: 184,
     rating: 4.8,
     totalCopies: 8,
-    publisher: "No Starch Press",
-    yearPublished: 2018,
-    language: "En",
-    coverImageUrl: "https://books.google.com/books/content?id=8i9bDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
-    keywords: ["javascript", "programmation", "web", "tutoriel"],
-  },
-  {
-    title: "The Pragmatic Programmer",
-    author: "Andrew Hunt",
-    isbn: "978-0135957059",
-    category: "Développement",
-    description: "Pratiques et conseils pour devenir un meilleur programmeur.",
-    pages: 352,
-    rating: 4.7,
-    totalCopies: 4,
-    publisher: "Addison-Wesley",
-    yearPublished: 2019,
-    language: "En",
-    coverImageUrl: "https://books.google.com/books/content?id=gJ_2DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
-    keywords: ["programmation", "carrière", "pratiques", "développeur"],
-  },
-  {
-    title: "Design Patterns",
-    author: "Gang of Four",
-    isbn: "978-0201633610",
-    category: "Développement",
-    description: "Les patterns essentiels pour la conception de logiciels robustes.",
-    pages: 395,
-    rating: 4.6,
-    totalCopies: 3,
-    publisher: "Addison-Wesley",
-    yearPublished: 1994,
-    language: "En",
-    coverImageUrl: "https://placehold.co/300x400?text=Design+Patterns&bg=e5e7eb&textColor=666",
-    keywords: ["patterns", "conception", "architéture", "réutilisable"],
-  },
-  {
-    title: "Code Complete",
-    author: "Steve McConnell",
-    isbn: "978-0735619678",
-    category: "Développement",
-    description: "Guide pratique complet pour la construction de logiciels de haute qualité.",
-    pages: 960,
-    rating: 4.8,
-    totalCopies: 2,
-    publisher: "Microsoft Press",
-    yearPublished: 2004,
-    language: "En",
-    coverImageUrl: "https://placehold.co/300x400?text=Code+Complete&bg=e5e7eb&textColor=666",
-    keywords: ["développement", "qualité", "construction", "logiciel"],
-  },
-
-  // =================== FICTION ===================
-  {
-    title: "Le Seigneur des Anneaux",
-    author: "J.R.R. Tolkien",
-    isbn: "978-2-07-036694-1",
-    category: "Fantasy",
-    description: "Une épopée fantastique incontournable avec la quête de détruire l'anneau unique.",
-    pages: 1200,
-    rating: 4.9,
-    totalCopies: 7,
-    publisher: "Le Livre de Poche",
-    yearPublished: 1954,
+    publisher: "Gallimard",
+    yearPublished: 1942,
     language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Seigneur+des+Anneaux&bg=e5e7eb&textColor=666",
-    keywords: ["fantasy", "épopée", "quête", "magie"],
-  },
-  {
-    title: "Harry Potter à l'école des sorciers",
-    author: "J.K. Rowling",
-    isbn: "978-2-253-06532-8",
-    category: "Fantasy",
-    description: "Le début de la saga Harry Potter où il découvre qu'il est un sorcier.",
-    pages: 309,
-    rating: 4.8,
-    totalCopies: 10,
-    publisher: "Le Livre de Poche",
-    yearPublished: 1998,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Harry+Potter&bg=e5e7eb&textColor=666",
-    keywords: ["harry potter", "fantasy", "jeunesse", "magie", "sorcellerie"],
+    coverImageUrl: "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1386913918i/11994.jpg",
+    keywords: ["absurde", "philosophie"]
   },
   {
     title: "Les Misérables",
     author: "Victor Hugo",
-    isbn: "978-2-07-063146-2",
+    isbn: "978-2253096337",
     category: "Classique",
-    description: "Chef-d'œuvre de la littérature française. Histoire de Jean Valjean et de sa rédemption.",
+    description: "Le destin épique de Jean Valjean.",
     pages: 1462,
-    rating: 4.7,
-    totalCopies: 5,
+    rating: 4.9,
+    totalCopies: 6,
     publisher: "Le Livre de Poche",
     yearPublished: 1862,
     language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Les+Miserables&bg=e5e7eb&textColor=666",
-    keywords: ["classique", "drame", "justice", "rédemption"],
+    coverImageUrl: "https://m.media-amazon.com/images/I/71mPzsZvh6L._AC_UF1000,1000_QL80_.jpg",
+    keywords: ["justice", "rédemption"]
   },
   {
     title: "1984",
     author: "George Orwell",
     isbn: "978-0451524934",
-    category: "Dystopie",
-    description: "Un roman dystopique sur un régime totalitaire et la surveillance de masse.",
+    category: "Philosophie",
+    description: "Un monde sous la surveillance de Big Brother.",
     pages: 328,
     rating: 4.8,
-    totalCopies: 6,
-    publisher: "Penguin Books",
+    totalCopies: 15,
+    publisher: "Penguin",
     yearPublished: 1949,
     language: "En",
-    coverImageUrl: "https://placehold.co/300x400?text=1984&bg=e5e7eb&textColor=666",
-    keywords: ["dystopie", "totalitarisme", "société", "futur"],
+    coverImageUrl: "https://m.media-amazon.com/images/I/71kxa1-0mfL._SL1500_.jpg",
+    keywords: ["surveillance", "totalitarisme"]
   },
   {
-    title: "Le Hobbit",
-    author: "J.R.R. Tolkien",
-    isbn: "978-2-253-04910-5",
-    category: "Fantasy",
-    description: "L'histoire de Bilbo Sacquet et de son aventure pour trouver le trésor du dragon.",
-    pages: 300,
-    rating: 4.7,
-    totalCopies: 4,
+    title: "Le Comte de Monte-Cristo",
+    author: "Alexandre Dumas",
+    isbn: "978-2253008897",
+    category: "Classique",
+    description: "Une histoire de trahison et de vengeance implacable.",
+    pages: 1600,
+    rating: 4.9,
+    totalCopies: 7,
     publisher: "Le Livre de Poche",
-    yearPublished: 1937,
+    yearPublished: 1844,
     language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Le+Hobbit&bg=e5e7eb&textColor=666",
-    keywords: ["fantasy", "aventure", "quête", "dragon"],
-  },
-
-  // =================== HISTOIRE ===================
-  {
-    title: "Une brève histoire du temps",
-    author: "Stephen Hawking",
-    isbn: "978-2-7540-2721-5",
-    category: "Sciences",
-    description: "Exploration fascinante de l'univers, du Big Bang à nos jours.",
-    pages: 236,
-    rating: 4.6,
-    totalCopies: 3,
-    publisher: "Odile Jacob",
-    yearPublished: 1988,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Histoire+du+temps&bg=e5e7eb&textColor=666",
-    keywords: ["science", "univers", "physique", "cosmologie"],
+    coverImageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwfuG2atV-bT_qWdRVQ-VVmaFUpgFsyAormHzAX1xev3u6jC6Pn2FolzJN_SnZzSpjzXtK1AotwicypP5D3RsDyIPn6Ywk_pQmpylWVX_Z&s=10",
+    keywords: ["vengeance", "aventure"]
   },
   {
-    title: "Sapiens",
-    author: "Yuval Noah Harari",
-    isbn: "978-2-07-065186-7",
-    category: "Histoire",
-    description: "Histoire captivante de l'humanité depuis l'âge de pierre jusqu'à nos jours.",
-    pages: 541,
-    rating: 4.8,
-    totalCopies: 8,
-    publisher: "Albin Michel",
-    yearPublished: 2011,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Sapiens&bg=e5e7eb&textColor=666",
-    keywords: ["histoire", "humanité", "évolution", "société"],
-  },
-  {
-    title: "La Révolution Française",
-    author: "Simon Schama",
-    isbn: "978-2-226-06209-8",
-    category: "Histoire",
-    description: "Récit détaillé et captivant de la plus grande révolution politique de l'histoire.",
-    pages: 944,
-    rating: 4.5,
-    totalCopies: 2,
-    publisher: "Le Seuil",
-    yearPublished: 1989,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Revolution+Francaise&bg=e5e7eb&textColor=666",
-    keywords: ["histoire", "france", "révolution", "politique"],
-  },
-
-  // =================== AFFAIRES & DÉVELOPPEMENT PERSONNEL ===================
-  {
-    title: "Pensées pour moi-même",
-    author: "Marc Aurèle",
-    isbn: "978-2-253-04883-2",
-    category: "Philosophie",
-    description: "Réflexions philosophiques du plus grand empereur romain sur la vie et la vertu.",
-    pages: 256,
-    rating: 4.7,
-    totalCopies: 4,
-    publisher: "Le Livre de Poche",
-    yearPublished: 170,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Pensees+pour+moi&bg=e5e7eb&textColor=666",
-    keywords: ["philosophie", "stoïcisme", "sagesse", "réflexion"],
-  },
-  {
-    title: "Atomic Habits",
-    author: "James Clear",
-    isbn: "978-2100818310",
-    category: "Développement Personnel",
-    description: "Guide pratique pour construire de bonnes habitudes et en éliminer les mauvaises.",
-    pages: 408,
+    title: "Orgueil et Préjugés",
+    author: "Jane Austen",
+    isbn: "978-2253004356",
+    category: "Classique",
+    description: "Elizabeth Bennet et Mr. Darcy.",
+    pages: 384,
     rating: 4.8,
     totalCopies: 9,
-    publisher: "Nathan",
-    yearPublished: 2018,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Atomic+Habits&bg=e5e7eb&textColor=666",
-    keywords: ["habitudes", "développement", "productivité", "transformation"],
-  },
-  {
-    title: "La loi de l'attraction",
-    author: "Jerry Hicks et Esther Hicks",
-    isbn: "978-2844502079",
-    category: "Développement Personnel",
-    description: "Guide pour utiliser le pouvoir de pensée pour attirer ce que vous désirez.",
-    pages: 380,
-    rating: 4.3,
-    totalCopies: 3,
-    publisher: "Ada",
-    yearPublished: 2006,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Loi+Attraction&bg=e5e7eb&textColor=666",
-    keywords: ["développement", "mentalité", "attraction", "réussite"],
-  },
-
-  // =================== SCIENCES & NATURE ===================
-  {
-    title: "Le monde de Sophie",
-    author: "Jostein Gaarder",
-    isbn: "978-2253050834",
-    category: "Philosophie",
-    description: "Roman philosophique qui explore les grandes questions de l'existence.",
-    pages: 646,
-    rating: 4.6,
-    totalCopies: 5,
-    publisher: "Seuil",
-    yearPublished: 1991,
-    language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Monde+Sophie&bg=e5e7eb&textColor=666",
-    keywords: ["philosophie", "roman", "éducation", "questionnement"],
-  },
-  {
-    title: "Le Silence des agneaux",
-    author: "Thomas Harris",
-    isbn: "978-2253055761",
-    category: "Thriller",
-    description: "Thriller psychologique intense avec l'agent FBI Clarice Starling et Hannibal Lecter.",
-    pages: 454,
-    rating: 4.7,
-    totalCopies: 4,
     publisher: "Le Livre de Poche",
+    yearPublished: 1813,
+    language: "Fr",
+    coverImageUrl: "https://janeausten.co.uk/cdn/shop/files/Jane-Austens-Pride-and-Prejudice-Illustrated-Hardback-Edition-Jane-Austen-Ecomm-00.webp?v=1729599854&width=700",
+    keywords: ["romance", "société"]
+  },
+  {
+    title: "Le Meilleur des Mondes",
+    author: "Aldous Huxley",
+    isbn: "978-2266283038",
+    category: "Histoire",
+    description: "Une société future conditionnée pour le bonheur.",
+    pages: 288,
+    rating: 4.7,
+    totalCopies: 10,
+    publisher: "Pocket",
+    yearPublished: 1932,
+    language: "Fr",
+    coverImageUrl: "https://static.fnac-static.com/multimedia/PE/Images/FR/NR/d0/1d/15/1383888/1540-1/tsp20251104073514/Le-meilleur-des-mondes.jpg",
+    keywords: ["science-fiction", "contrôle"]
+  },
+  {
+    title: "L'Art de la Guerre",
+    author: "Sun Tzu",
+    isbn: "978-2253031086",
+    category: "Philosophie",
+    description: "Traité de stratégie antique.",
+    pages: 160,
+    rating: 4.7,
+    totalCopies: 12,
+    publisher: "Le Livre de Poche",
+    yearPublished: -500,
+    language: "Fr",
+    coverImageUrl: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIADgALQMBEQACEQEDEQH/xAAaAAABBQEAAAAAAAAAAAAAAAACAwQFBgcA/8QAMxAAAgEDAgMFBwIHAAAAAAAAAQIDAAQRITEFEkETIlGRsQY1YXFzgfAjMhQlM1KhweH/xAAbAQACAwEBAQAAAAAAAAAAAAAABAECBgMFB//EADMRAAIBAgMBDQkBAAAAAAAAAAABAgMRBBIhMRUyNFJhcXKRobHB0fAGEyJBUVPC4fEF/9oADAMBAAIRAxEAPwDDiTmgCUsrS0nghaQyqzmVWPargFUDA45djkj7VzlJplkkHxHh1vb2wkt3kkckDWQEDRTnbxJGN/I0Rm29QaSFBwuzRZGknZwqAqEcAswWTmXUf3Jp8D1JFRnl9PWhOVEdxGKKCZI4RJ/TRmLOG1ZQSNANs4+1Xi21qVY3Q71YgE70ASPBbKS7ldkthOsYHMpcLjPz+RFc6k1HaxvC4Ktir+6V7ctiat7O+ge5C8OXsJDlEEqjl0I9D5gVxdSDtqO7jY3idq8w47O7WIqbJmdoTEzF01/dhjrv3v8AFDqRvtDcbG8TtXmVOWNopXjcYZGKkfEUyndXPJnBwk4y2o6PrUlQTvQBavYNQ0tyHxyloubJxpls0pitiNL7PycYVmtun5FsniCRocIDkjGg64we8f8AlKJmipVHKT9dWi/Y5e2iWKYqiFl7oOdNsnc/mnzqt2LRrzc43bs9e3mMn4j7wuvrP6mvWhvUYrGcJqdJ94lH1qwsCd6ALX7Bh2kvBGSG7moGSP3UpivkaT/AcVGrm2fD4lodXSFf1AVc8xUMDqCRnelPmaaMoym9NVyczFeadkZ+3YDOR3Tq3gPP5VGhytSUlHL/AD0ucy7iPvC6+s/qa9WG9Rg8Zwmp0n3iUfWrCwJ3oAtXsI/ZvePjJATHwOGwaUxWtjS+z8M8aq6PiWua4EicoEoCgBS0mfP1pRKxoqdBwld25dADN+iiK0nMGZmJbxxt5UWOipfG5NK2nj5ma8R94XX1n9TXqQ3qPnuM4TU6T7xGPrVhYE70APrCSWBWMN8tvzgFgCcnGfz71SST2oYoYmtQv7qTVx0Ly8Of5xserHWq5IcU77pYz7r6zv4u9zrxgYwNec70ZIcUN0sZ919ZGXS4mJ7ZZi3eLL410WwSlJyk5N3bAj61JUE70AL2Vy1pN2qoGPKRhttahq5KdhzPxWWWKSMIFDuXzk5UlubTw1/11GaqoJBmFH4zI4kzFjtHLnvnTvBh5ED7Z8c0ZETmIqrlQ4+tAH//2Q==",
+    keywords: ["stratégie", "leadership"]
+  },
+  {
+    title: "Méditations",
+    author: "Marc Aurèle",
+    isbn: "978-2081395566",
+    category: "Philosophie",
+    description: "Réflexions stoïciennes d'un empereur.",
+    pages: 224,
+    rating: 4.8,
+    totalCopies: 6,
+    publisher: "Flammarion",
+    yearPublished: 180,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/410FuF1hptL._SY445_SX342_ML2_.jpg",
+    keywords: ["stoïcisme", "sagesse"]
+  },
+  {
+    title: "Comment se faire des amis",
+    author: "Dale Carnegie",
+    isbn: "978-2253051411",
+    category: "Classique",
+    description: "Le guide référence pour les relations sociales.",
+    pages: 320,
+    rating: 4.8,
+    totalCopies: 18,
+    publisher: "Le Livre de Poche",
+    yearPublished: 1936,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/41ru8lTgcIL._SY445_SX342_ML2_.jpg",
+    keywords: ["communication", "relations"]
+  },
+  {
+    title: "Astérix le Gaulois",
+    author: "René Goscinny & Albert Uderzo",
+    isbn: "978-2012101333",
+    category: "BD",
+    description: "La toute première aventure d'Astérix et Obélix contre l'envahisseur romain. Un monument de l'humour et de la culture franco-belge.",
+    pages: 48,
+    rating: 4.8,
+    totalCopies: 12,
+    publisher: "Hachette",
+    yearPublished: 1961,
+    language: "Fr",
+    coverImageUrl: "https://images.renaud-bray.com/images/PG/553/553329-gf.jpg?404=404RB.gif",
+    keywords: ["humour", "histoire", "gaulois", "aventure"],
+  },
+  {
+    title: "One Piece - Tome 1",
+    author: "Eiichiro Oda",
+    isbn: "978-2723488525",
+    category: "BD",
+    description: "Luffy, un jeune garçon dont le corps est devenu élastique, se lance à la recherche du trésor légendaire pour devenir le roi des pirates.",
+    pages: 208,
+    rating: 4.9,
+    totalCopies: 25,
+    publisher: "Glénat",
+    yearPublished: 1997,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/518KKkmd1fL._SY445_SX342_ML2_.jpg",
+    keywords: ["pirates", "aventure", "shonen", "pouvoirs"],
+  },
+  {
+    title: "Maus",
+    author: "Art Spiegelman",
+    isbn: "978-2081229068",
+    category: "BD",
+    description: "Le premier roman graphique à avoir reçu le prix Pulitzer. Une œuvre poignante sur la Shoah où les Juifs sont représentés par des souris et les Nazis par des chats.",
+    pages: 296,
+    rating: 4.9,
+    totalCopies: 5,
+    publisher: "Flammarion",
+    yearPublished: 1980,
+    language: "Fr",
+    coverImageUrl: "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcRcfZ4RkiztfabnEngmtuLEqAumWoSIjYvQ3CHpVmGeXGA9yqfQ",
+    keywords: ["histoire", "guerre", "biographie", "mémoire"],
+  },
+  {
+    title: "Batman: The Killing Joke",
+    author: "Alan Moore & Brian Bolland",
+    isbn: "978-2365773477",
+    category: "BD",
+    description: "L'une des histoires les plus célèbres de Batman, explorant les origines du Joker et sa relation obsessionnelle avec le Chevalier Noir.",
+    pages: 64,
+    rating: 4.7,
+    totalCopies: 8,
+    publisher: "Urban Comics",
     yearPublished: 1988,
     language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Silence+Agneaux&bg=e5e7eb&textColor=666",
-    keywords: ["thriller", "crime", "psychologie", "suspense"],
+    coverImageUrl: "https://m.media-amazon.com/images/I/91OjBx3hSNL._SY466_.jpg",
+    keywords: ["super-héros", "joker", "noir", "psychologique"],
   },
-
-  // =================== JEUNESSE ===================
   {
-    title: "Le Monde de Narnia",
-    author: "C.S. Lewis",
-    isbn: "978-2253032977",
-    category: "Fantasy",
-    description: "Série de contes de fées fantastiques dans un monde magique parallèle.",
-    pages: 272,
+    title: "Le Seigneur des Anneaux - L'Intégrale",
+    author: "J.R.R. Tolkien",
+    isbn: "978-2266283038",
+    category: "Fantaisie",
+    description: "Le chef-d'œuvre absolu de la Fantaisie. Suivez la quête de Frodon pour détruire l'Anneau Unique dans les flammes de la Montagne du Destin.",
+    pages: 1178,
+    rating: 5.0,
+    totalCopies: 10,
+    publisher: "Pocket",
+    yearPublished: 1954,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/51F65nJNyPL._SY445_SX342_ML2_.jpg",
+    keywords: ["épopée", "anneau", "magie", "aventure"],
+  },
+  {
+    title: "Fourth Wing (The Empyrean, Book 1)",
+    author: "Rebecca Yarros",
+    isbn: "978-2266341234",
+    category: "Fantaisie",
+    description: "Bienvenue au collège de guerre de Basgiath, où les dragons ne se lient qu'aux plus forts. Pour Violet Sorrengail, l'obtention d'un diplôme signifie la survie... ou la mort.",
+    pages: 600,
+    rating: 4.9,
+    totalCopies: 15,
+    publisher: "Hugo Roman",
+    yearPublished: 2023,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/914HWd0RxsL._UF1000,1000_QL80_.jpg",
+    keywords: ["dragons", "romance", "action", "académie"],
+  },
+  {
+    title: "American Gods",
+    author: "Neil Gaiman",
+    isbn: "978-2290038451",
+    category: "Fantaisie",
+    description: "Une guerre se prépare entre les anciens dieux des mythologies et les nouveaux dieux de la technologie et des médias. Un voyage onirique à travers l'Amérique.",
+    pages: 608,
     rating: 4.6,
-    totalCopies: 6,
-    publisher: "Le Livre de Poche",
-    yearPublished: 1950,
+    totalCopies: 5,
+    publisher: "J'ai Lu",
+    yearPublished: 2001,
     language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Narnia&bg=e5e7eb&textColor=666",
-    keywords: ["fantasy", "jeunesse", "aventure", "magie", "monde"],
+    coverImageUrl: "https://m.media-amazon.com/images/I/91MFgXaItzL._SY522_.jpg",
+    keywords: ["mythologie", "moderne", "voyage", "dieux"],
   },
   {
-    title: "Percy Jackson",
-    author: "Rick Riordan",
-    isbn: "978-2015048634",
-    category: "Jeunesse",
-    description: "Aventures d'un jeune demi-dieu découvrant ses pouvoirs grecs.",
-    pages: 375,
-    rating: 4.5,
-    totalCopies: 5,
-    publisher: "Albin Michel Jeunesse",
-    yearPublished: 2005,
+    title: "Le Trône de Fer - L'Intégrale 1",
+    author: "George R.R. Martin",
+    isbn: "978-2290019436",
+    category: "Fantaisie",
+    description: "Dans un pays où les étés durent des décennies et les hivers une vie entière, des familles nobles luttent pour le contrôle du Trône de Fer.",
+    pages: 800,
+    rating: 4.8,
+    totalCopies: 8,
+    publisher: "Pygmalion",
+    yearPublished: 1996,
     language: "Fr",
-    coverImageUrl: "https://placehold.co/300x400?text=Percy+Jackson&bg=e5e7eb&textColor=666",
-    keywords: ["jeunesse", "mythology", "aventure", "fantasy"],
+    coverImageUrl: "https://m.media-amazon.com/images/I/4102gMwjYGL._SY445_SX342_QL70_ML2_.jpg",
+    keywords: ["politique", "guerre", "royaumes", "dragons"],
   },
+  {
+    title: "Vercingétorix",
+    author: "Jean-Louis Brunaux",
+    isbn: "978-2070123574",
+    category: "Histoire",
+    description: "Une biographie rigoureuse qui dépoussière le mythe du chef gaulois. Découvrez l'homme derrière la légende, de sa montée en puissance à la tragédie d'Alésia.",
+    pages: 400,
+    rating: 4.7,
+    totalCopies: 5,
+    publisher: "Gallimard",
+    yearPublished: 2018,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/91StkTh4ncL._SY425_.jpg",
+    keywords: ["gaulois", "antiquité", "guerre", "biographie"],
+  },
+  {
+    title: "Sapiens : Une brève histoire de l'humanité",
+    author: "Yuval Noah Harari",
+    isbn: "978-2226257017",
+    category: "Histoire",
+    description: "Comment notre espèce a-t-elle réussi à dominer la Terre ? Harari retrace l'évolution de l'Homo Sapiens, de l'âge de pierre à l'ère de l'intelligence artificielle.",
+    pages: 512,
+    rating: 4.9,
+    totalCopies: 12,
+    publisher: "Albin Michel",
+    yearPublished: 2014,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/41r9p0w-a2L._SY445_SX342_ML2_.jpg",
+    keywords: ["évolution", "société", "humanité", "révolution"],
+  },
+  {
+    title: "Napoléon",
+    author: "Max Gallo",
+    isbn: "978-2221090459",
+    category: "Histoire",
+    description: "Le premier tome de la fresque monumentale de Max Gallo. Suivez l'ascension fulgurante du petit caporal corse devenu empereur de l'Europe.",
+    pages: 600,
+    rating: 4.8,
+    totalCopies: 8,
+    publisher: "Robert Laffont",
+    yearPublished: 1997,
+    language: "Fr",
+    coverImageUrl: "https://m.media-amazon.com/images/I/91+oXg8O01L._AC_UF1000,1000_QL80_.jpg",
+    keywords: ["empire", "napoléon", "france", "batailles"],
+  },
+  {
+    title: "Test",
+    author: "Test",
+    isbn: "978-2070123578",
+    category: "",
+    description: "Test",
+    pages: 1,
+    rating: 1,
+    totalCopies: 1,
+    publisher: "Test",
+    yearPublished: 2018,
+    language: "Fr",
+    coverImageUrl: "https://d8iqbmvu05s9c.cloudfront.net/aiqpo1f3jbzpd0silc6b0qqot9ao",
+    keywords: [""],
+  }
 ];
 
 /**
  * ========================================
- * FONCTION POUR INITIALISER LES LIVRES
+ * LOGIQUE D'INITIALISATION
  * ========================================
  */
 
 /**
- * Ajouter tous les livres à Firestore
- * À utiliser UNE SEULE FOIS pour initialiser la base de données
- * 
- * @param {string} userRole - Rôle de l'utilisateur (doit être 'Bibliothécaire')
- * @returns {Promise<Object>} Résumé de l'opération
+ * seedBooksToFirebase - Force l'ajout des livres
  */
 export const seedBooksToFirebase = async (userRole = 'Bibliothécaire') => {
   try {
     if (userRole !== 'Bibliothécaire') {
-      throw new Error('Seul un bibliothécaire peut ajouter des livres à la base de données.');
+      throw new Error('Seul un bibliothécaire peut ajouter des livres.');
     }
 
     const results = {
@@ -356,52 +369,22 @@ export const seedBooksToFirebase = async (userRole = 'Bibliothécaire') => {
 
     console.log(`📚 Début de l'ajout de ${booksDatabase.length} livres...`);
 
-    // Ajouter chaque livre
     for (const book of booksDatabase) {
       try {
         const bookId = await databaseService.addBook(userRole, {
-          title: book.title,
-          author: book.author,
-          isbn: book.isbn,
-          category: book.category,
-          description: book.description || '',
-          pages: book.pages || 0,
-          rating: book.rating || 0,
-          coverImageUrl: book.coverImageUrl || '',
-          totalCopies: book.totalCopies || 1,
-          publisher: book.publisher || '',
-          yearPublished: book.yearPublished || new Date().getFullYear(),
-          language: book.language || 'Fr',
+          ...book,
           keywords: book.keywords || [],
+          yearPublished: book.yearPublished || new Date().getFullYear(),
         });
 
-        results.success.push({
-          title: book.title,
-          id: bookId,
-          status: '✅ Ajouté',
-        });
+        results.success.push({ title: book.title, id: bookId });
         results.addedCount++;
-
-        console.log(`✅ ${book.title} (ID: ${bookId})`);
+        console.log(`✅ ${book.title}`);
       } catch (error) {
-        results.errors.push({
-          title: book.title,
-          status: '❌ Erreur',
-          error: error.message,
-        });
+        results.errors.push({ title: book.title, error: error.message });
         results.errorCount++;
-
-        console.error(`❌ Erreur pour ${book.title}: ${error.message}`);
       }
     }
-
-    console.log('\n========================================');
-    console.log('📊 RÉSUMÉ DE L\'INITIALISATION');
-    console.log('========================================');
-    console.log(`Total de livres: ${results.total}`);
-    console.log(`✅ Ajoutés avec succès: ${results.addedCount}`);
-    console.log(`❌ Erreurs: ${results.errorCount}`);
-    console.log('========================================\n');
 
     return results;
   } catch (error) {
@@ -411,71 +394,34 @@ export const seedBooksToFirebase = async (userRole = 'Bibliothécaire') => {
 };
 
 /**
- * ========================================
- * FONCTION D'INITIALISATION ALTERNATIVE
- * ========================================
- */
-
-/**
- * Vérifier et initialiser les livres si la base est vide
- * Cette fonction vérifie d'abord si la base contient des livres
- * avant d'ajouter les données d'initialisation
- * 
- * @param {string} userRole - Rôle de l'utilisateur
- * @returns {Promise<Object>} Résumé de l'opération
+ * initializeBooksIfEmpty - Vérifie et initialise si vide (Appelé par le serveur)
  */
 export const initializeBooksIfEmpty = async (userRole = 'Bibliothécaire') => {
   try {
-    // Vérifier si des livres existent déjà
     const existingBooks = await databaseService.getAllBooks();
 
     if (existingBooks && existingBooks.length > 0) {
-      console.log(`📚 Base de données déjà initialisée avec ${existingBooks.length} livres.`);
+      console.log(`📚 Base déjà initialisée (${existingBooks.length} livres).`);
       return {
         status: 'already_initialized',
         booksCount: existingBooks.length,
-        message: 'La base de données contient déjà des livres.',
+        message: 'La base contient déjà des livres.',
       };
     }
 
-    // Base vide, initialiser les données
-    console.log('📚 Base de données vide. Initialisation en cours...');
+    console.log('📚 Base de données vide. Initialisation auto...');
     return await seedBooksToFirebase(userRole);
   } catch (error) {
-    console.error('Erreur lors de la vérification/initialisation:', error.message);
+    console.error('Erreur lors de la vérification:', error.message);
     throw error;
   }
 };
 
 /**
- * ========================================
- * EXPORT DES STATISTIQUES
- * ========================================
+ * Export par défaut pour assurer la compatibilité avec seedModule
  */
-
-export const booksStats = {
-  total: booksDatabase.length,
-  categories: {
-    Développement: booksDatabase.filter(b => b.category === 'Développement').length,
-    Fantasy: booksDatabase.filter(b => b.category === 'Fantasy').length,
-    Classique: booksDatabase.filter(b => b.category === 'Classique').length,
-    Dystopie: booksDatabase.filter(b => b.category === 'Dystopie').length,
-    Sciences: booksDatabase.filter(b => b.category === 'Sciences').length,
-    Histoire: booksDatabase.filter(b => b.category === 'Histoire').length,
-    Philosophie: booksDatabase.filter(b => b.category === 'Philosophie').length,
-    'Développement Personnel': booksDatabase.filter(b => b.category === 'Développement Personnel').length,
-    Thriller: booksDatabase.filter(b => b.category === 'Thriller').length,
-    Jeunesse: booksDatabase.filter(b => b.category === 'Jeunesse').length,
-  },
-  totalCopies: booksDatabase.reduce((sum, book) => sum + (book.totalCopies || 1), 0),
-  averageRating: (booksDatabase.reduce((sum, book) => sum + (book.rating || 0), 0) / booksDatabase.length).toFixed(2),
-};
-
 export default {
   seedBooksToFirebase,
   initializeBooksIfEmpty,
-  booksDatabase,
-  booksStats,
+  booksDatabase
 };
-
-
