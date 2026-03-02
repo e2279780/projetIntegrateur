@@ -326,21 +326,6 @@ export const booksDatabase = [
     language: "Fr",
     coverImageUrl: "https://m.media-amazon.com/images/I/91+oXg8O01L._AC_UF1000,1000_QL80_.jpg",
     keywords: ["empire", "napoléon", "france", "batailles"],
-  },
-  {
-    title: "Test",
-    author: "Test",
-    isbn: "978-2070123578",
-    category: "",
-    description: "Test",
-    pages: 1,
-    rating: 1,
-    totalCopies: 1,
-    publisher: "Test",
-    yearPublished: 2018,
-    language: "Fr",
-    coverImageUrl: "https://d8iqbmvu05s9c.cloudfront.net/aiqpo1f3jbzpd0silc6b0qqot9ao",
-    keywords: [""],
   }
 ];
 

@@ -71,7 +71,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex flex-col font-sans relative">
         
         {/* Toast de confirmation de déconnexion */}
         {showLogoutToast && (

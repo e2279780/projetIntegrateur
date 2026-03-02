@@ -3,6 +3,7 @@
  * Script pour initialiser la base de données Firebase avec les livres
  * Usage: node scripts/seed-database.js
  */
+/* global process */
 
 async function seedDatabase() {
   console.log('📚 BiblioConnect - Initialisation de la base de données');

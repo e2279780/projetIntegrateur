@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faInfoCircle, faLock, faSignInAlt, faTimes, 
-  faCheckCircle, faBook, faStar
+  faCheckCircle, faBook, faStar, faShoppingCart
 } from '@fortawesome/free-solid-svg-icons';
 
 /**
- * BookCard - Composant pour afficher un livre
- * Supporte les données provenant de Firebase (format local)
+ * BookCard - Composant moderne pour afficher un livre
  */
 export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
   const [showModal, setShowModal] = useState(false);
@@ -16,8 +15,6 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Extraction des données du livre (format Firebase)
-  // Extraction des données du livre (format Firebase)
   const title = book.title || 'Titre inconnu';
   const author = book.author || 'Auteur inconnu';
   const description = book.description || 'Pas de description disponible.';
@@ -57,7 +54,6 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
       setShowNotification(true);
       setShowModal(false);
       
-      // Appeler le callback si fourni
       if (onBorrow) {
         onBorrow(book);
       }
@@ -70,81 +66,223 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
 
   return (
     <>
-      {/* NOTIFICATION D'EMPRUNT RÉUSSI */}
+      {/* Notification de succès */}
       {showNotification && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-emerald-500 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-emerald-400">
-            <FontAwesomeIcon icon={faCheckCircle} />
-            <p className="font-black text-xs uppercase tracking-widest">
-              Livre emprunté ! Disponible 14 jours.
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-4 border border-emerald-400/30 backdrop-blur-md">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <FontAwesomeIcon icon={faCheckCircle} className="text-white" />
+            </div>
+            <p className="font-black text-sm uppercase tracking-widest">
+              Livre emprunté ! 14 jours.
             </p>
           </div>
         </div>
       )}
 
-      {/* CARTE DE LIVRE */}
-      <div className="bg-white rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col group h-full relative">
-        {!isLoggedIn && (
-          <div className="absolute inset-0 z-20 bg-slate-900/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-500/20">
-              <FontAwesomeIcon icon={faLock} />
-            </div>
-            <p className="text-white font-black text-xs uppercase tracking-[0.2em] mb-6">Connectez-vous pour emprunter</p>
-            <Link to="/login" className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2">
-              <FontAwesomeIcon icon={faSignInAlt} /> Connexion
-            </Link>
-          </div>
-        )}
-
-        <div className="h-64 bg-slate-100 relative overflow-hidden">
-          <img 
-            src={coverUrl} 
-            alt={title} 
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            onError={(e) => { e.target.src = 'https://placehold.co/300x450?text=Livre&bg=e5e7eb&textColor=666'; }}
-          />
-          {/* Badge disponibilité */}
-          {availableCopies > 0 && (
-            <div className="absolute top-4 right-4 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-lg">
-              {availableCopies} dispo
-            </div>
-          )}
-          {availableCopies <= 0 && (
-            <div className="absolute top-4 right-4 bg-red-500 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-lg">
-              Épuisé
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 flex flex-col flex-1">
-          <h3 className="font-black text-slate-800 text-lg line-clamp-1 mb-1">{title}</h3>
-          <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-2">{author}</p>
-          
-          {/* Rating */}
-          {rating && (
-            <div className="flex items-center gap-1 mb-3">
-              <FontAwesomeIcon icon={faStar} className="text-yellow-400 text-sm" />
-              <span className="text-sm font-bold text-slate-600">{rating}/5</span>
-            </div>
-          )}
-          
-          <p className="text-slate-500 text-sm line-clamp-2 mb-6 flex-1">{description}</p>
-          
-          <div className="flex gap-2 relative z-10">
+      {/* Modal Détails */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in-scale">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
             <button 
-              onClick={() => setShowModal(true)} 
-              className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition"
+              onClick={() => setShowModal(false)}
+              className="absolute top-6 right-6 bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-600 w-10 h-10 rounded-full flex items-center justify-center transition duration-200 z-10"
             >
-              <FontAwesomeIcon icon={faInfoCircle} className="mr-2" /> Détails
+              <FontAwesomeIcon icon={faTimes} />
             </button>
-            {isLoggedIn && availableCopies > 0 && (
-              <button 
-                onClick={() => setShowModal(true)}
-                className="bg-blue-600 text-white w-12 h-12 rounded-2xl hover:bg-blue-700 transition shadow-lg"
-              >
-                <FontAwesomeIcon icon={faBook} />
-              </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-8">
+              {/* Image */}
+              <div className="flex flex-col gap-4">
+                <img 
+                  src={coverUrl} 
+                  alt={title} 
+                  className="w-full rounded-2xl shadow-xl object-cover aspect-[3/4] hover-lift"
+                  onError={(e) => { e.target.src = 'https://placehold.co/300x450?text=Livre&bg=e5e7eb&textColor=666'; }}
+                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Disponibilité</p>
+                    <div className={`px-4 py-3 rounded-xl text-center font-black text-white ${availableCopies > 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`}>
+                      {availableCopies > 0 ? `${availableCopies} copie${availableCopies > 1 ? 's' : ''} libre${availableCopies > 1 ? 's' : ''}` : 'Épuisé'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contenu */}
+              <div className="flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div>
+                    <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider mb-3">
+                      {category}
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-900 leading-tight mb-2">{title}</h2>
+                    <p className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                      {author}
+                    </p>
+                  </div>
+
+                  {rating && (
+                    <div className="flex items-center gap-2 py-2">
+                      <div className="flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <FontAwesomeIcon 
+                            key={i}
+                            icon={faStar} 
+                            className={i < Math.round(rating) ? 'text-yellow-400' : 'text-gray-300'}
+                          />
+                        ))}
+                      </div>
+                      <span className="font-bold text-slate-600">{rating.toFixed(1)}/5</span>
+                    </div>
+                  )}
+
+                  <div className="py-4 border-t border-b border-slate-200 space-y-2">
+                    {pages && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-semibold">Pages :</span>
+                        <span className="font-bold text-slate-900">{pages}</span>
+                      </div>
+                    )}
+                    {isbn && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-semibold">ISBN :</span>
+                        <span className="font-mono font-bold text-slate-900">{isbn}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-slate-600 leading-relaxed text-sm">{description}</p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-8">
+                  {!isLoggedIn ? (
+                    <Link 
+                      to="/login" 
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-3 rounded-2xl font-black text-center transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                    >
+                      <FontAwesomeIcon icon={faSignInAlt} /> Se connecter
+                    </Link>
+                  ) : availableCopies > 0 ? (
+                    <button 
+                      onClick={handleBorrow}
+                      disabled={isLoading}
+                      className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-slate-400 disabled:to-slate-500 text-white py-3 rounded-2xl font-black transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 disabled:shadow-none active:scale-95"
+                    >
+                      <FontAwesomeIcon icon={faShoppingCart} />
+                      {isLoading ? 'Emprunt...' : 'Emprunter'}
+                    </button>
+                  ) : (
+                    <button 
+                      disabled
+                      className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white py-3 rounded-2xl font-black cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <FontAwesomeIcon icon={faLock} /> Indisponible
+                    </button>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="text-red-600 text-sm font-bold text-center mt-3 p-3 bg-red-50 rounded-xl">
+                    {error}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Carte Livre */}
+      <div className="h-full">
+        <div className="bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 overflow-hidden flex flex-col group relative h-full hover:border-blue-200 hover-lift">
+          
+          {/* Overlay pour utilisateurs non connectés */}
+          {!isLoggedIn && (
+            <div className="absolute inset-0 z-20 bg-slate-900/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center rounded-3xl">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-500/50">
+                <FontAwesomeIcon icon={faLock} size="lg" />
+              </div>
+              <p className="text-white font-black text-xs uppercase tracking-[0.2em] mb-6">Connectez-vous</p>
+              <Link to="/login" className="bg-white text-slate-900 px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 shadow-lg">
+                <FontAwesomeIcon icon={faSignInAlt} /> Login
+              </Link>
+            </div>
+          )}
+
+          {/* Image Container */}
+          <div className="relative h-72 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+            <img 
+              src={coverUrl} 
+              alt={title} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              onError={(e) => { e.target.src = 'https://placehold.co/300x450?text=Livre&bg=e5e7eb&textColor=666'; }}
+            />
+            
+            {/* Badges */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
+              {availableCopies > 0 && (
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/50 backdrop-blur-sm">
+                  {availableCopies} libre
+                </div>
+              )}
+              {availableCopies <= 0 && (
+                <div className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-lg shadow-red-500/50 backdrop-blur-sm">
+                  Épuisé
+                </div>
+              )}
+            </div>
+
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
+
+          {/* Contenu */}
+          <div className="p-5 flex flex-col flex-1">
+            <div className="inline-block w-fit px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[9px] font-black uppercase tracking-wider mb-2">
+              {category}
+            </div>
+            
+            <h3 className="font-black text-slate-800 text-base line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors duration-300">{title}</h3>
+            <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-3 truncate">{author}</p>
+            
+            {rating && (
+              <div className="flex items-center gap-1 mb-3">
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <FontAwesomeIcon 
+                      key={i}
+                      icon={faStar} 
+                      className={`text-xs ${i < Math.round(rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-slate-600">{rating.toFixed(1)}</span>
+              </div>
             )}
+            
+            <p className="text-slate-500 text-xs line-clamp-2 mb-4 flex-1">{description}</p>
+            
+            {/* Buttons */}
+            <div className="flex gap-2 relative z-10">
+              <button 
+                onClick={() => setShowModal(true)} 
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1"
+              >
+                <FontAwesomeIcon icon={faInfoCircle} /> Détails
+              </button>
+              {isLoggedIn && availableCopies > 0 && (
+                <button 
+                  onClick={() => setShowModal(true)}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white w-11 h-11 rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 flex items-center justify-center active:scale-95"
+                  title="Emprunter"
+                >
+                  <FontAwesomeIcon icon={faShoppingCart} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

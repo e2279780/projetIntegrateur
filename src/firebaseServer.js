@@ -2,6 +2,7 @@
  * Firebase configuration for server-side (Node.js)
  * Uses process.env instead of import.meta.env
  */
+/* global process */
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
