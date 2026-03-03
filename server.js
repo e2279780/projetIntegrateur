@@ -451,6 +451,21 @@ app.post('/api/send-alert', async (req, res) => {
   }
 });
 
+// Endpoint pour récupérer tous les achats (Admin uniquement)
+app.get('/api/purchases', async (req, res) => {
+  try {
+    // Pour maintenant, retourner une liste vide puisque nous n'avons pas de getAllPurchases
+    // Les données seront chargées côté client depuis Firestore
+    res.json({ 
+      purchases: [],
+      message: 'Les achats sont chargés côté client'
+    });
+  } catch (err) {
+    console.error('Erreur lors de la récupération des achats:', err);
+    res.status(500).json({ error: err.message || 'Erreur lors de la récupération des achats' });
+  }
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, async () => {
   console.log(`Biblioconnect API running on http://localhost:${PORT}`);

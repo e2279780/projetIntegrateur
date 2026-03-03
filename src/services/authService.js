@@ -160,7 +160,23 @@ export const getCurrentUserProfile = async (userId) => {
   try {
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (!userDoc.exists()) {
-      throw new Error('Profil utilisateur non trouvé');
+      // Si le profil n'existe pas, créer un profil par défaut avec les données de Firebase Auth
+      const currentUser = auth.currentUser;
+      const defaultProfile = {
+        uid: userId,
+        email: currentUser?.email || '',
+        firstName: currentUser?.displayName?.split(' ')[0] || 'Utilisateur',
+        lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || '',
+        photoURL: currentUser?.photoURL || '',
+        role: 'Membre',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      // Créer le profil dans Firestore
+      await setDoc(doc(db, 'users', userId), defaultProfile);
+      
+      return defaultProfile;
     }
     return userDoc.data();
   } catch (error) {

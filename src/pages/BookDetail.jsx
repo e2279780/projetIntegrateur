@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faBook, faCheckCircle, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faBook, faCheckCircle, faSignInAlt, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import ElegantCarousel from '../components/ElegantCarousel';
 import { databaseService } from '../services';
+import { useCart } from '../context/useCart';
 import Loading from '../components/Loading';
 
 /**
@@ -13,6 +14,7 @@ import Loading from '../components/Loading';
 export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
   const { bookId } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [book, setBook] = useState(null);
   const [similarBooks, setSimilarBooks] = useState([]); // État pour les livres de même catégorie
   const [loading, setLoading] = useState(true);
@@ -77,6 +79,11 @@ export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePurchaseClick = async () => {
+    addToCart(book);
+    setError(`${book.title} a été ajouté au panier!`);
   };
 
   const availableCopies = book?.availableCopies ?? book?.totalCopies ?? 0;
@@ -186,6 +193,10 @@ export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
                   </div>
                 )}
                 <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold text-gray-600 uppercase tracking-wider">Prix</span>
+                  <span className="text-lg font-black text-purple-600">${(book.price || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-gray-600 uppercase tracking-wider">Disponibilité</span>
                   <span className={`text-sm font-black ${availableCopies > 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {availableCopies > 0 ? `${availableCopies} disponible(s)` : 'Indisponible'}
@@ -207,29 +218,49 @@ export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
               {borrowSuccess && (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl flex items-center gap-3">
                   <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
-                  <span className="font-bold">Livre emprunté ! Redirection...</span>
+                  <span className="font-bold">Achat effectué ! Redirection...</span>
                 </div>
-              )}
-
-              {isLoggedIn && availableCopies > 0 && !borrowSuccess && (
-                <button
-                  onClick={handleBorrow}
-                  disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-blue-200 flex items-center justify-center gap-3"
-                >
-                  <FontAwesomeIcon icon={faBook} />
-                  {isLoading ? 'Emprunt en cours...' : 'Emprunter (14 jours)'}
-                </button>
               )}
 
               {!isLoggedIn && (
                 <button
                   onClick={() => navigate('/login')}
-                  className="w-full bg-slate-800 text-white py-4 rounded-2xl font-black text-lg transition flex items-center justify-center gap-3"
+                  className="w-full bg-slate-800 text-white py-4 rounded-2xl font-black text-lg transition flex items-center justify-center gap-3 hover:bg-slate-700"
                 >
                   <FontAwesomeIcon icon={faSignInAlt} />
-                  Se connecter pour emprunter
+                  Se connecter
                 </button>
+              )}
+
+              {isLoggedIn && !borrowSuccess && (
+                <>
+                  {availableCopies > 0 ? (
+                    <button
+                      onClick={handleBorrow}
+                      disabled={isLoading}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-emerald-200 flex items-center justify-center gap-3"
+                    >
+                      <FontAwesomeIcon icon={faBook} />
+                      {isLoading ? 'Emprunt en cours...' : 'Emprunter (14 jours)'}
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full bg-gray-500 text-white py-4 rounded-2xl font-black text-lg cursor-not-allowed flex items-center justify-center gap-3"
+                    >
+                      Non disponible à l'emprunt
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handlePurchaseClick}
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white py-4 rounded-2xl font-black text-lg transition transform active:scale-95 shadow-xl shadow-purple-200 flex items-center justify-center gap-3"
+                  >
+                    <FontAwesomeIcon icon={faShoppingCart} />
+                    {isLoading ? 'Ajout...' : `Acheter ($${(book.price || 0).toFixed(2)})`}
+                  </button>
+                </>
               )}
             </div>
           </div>

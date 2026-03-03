@@ -5,6 +5,7 @@ import {
   faInfoCircle, faLock, faSignInAlt, faTimes, 
   faCheckCircle, faBook, faStar, faShoppingCart
 } from '@fortawesome/free-solid-svg-icons';
+import { useCart } from '../context/useCart';
 
 /**
  * BookCard - Composant moderne pour afficher un livre
@@ -14,6 +15,8 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
   const [showNotification, setShowNotification] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const { addToCart } = useCart();
 
   const title = book.title || 'Titre inconnu';
   const author = book.author || 'Auteur inconnu';
@@ -23,6 +26,7 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
   const rating = book.rating || null;
   const pages = book.pages || null;
   const isbn = book.isbn || null;
+  const price = book.price || 0;
   const availableCopies = book.availableCopies ?? book.totalCopies ?? 0;
   const bookId = book.id;
 
@@ -52,6 +56,7 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
       }
 
       setShowNotification(true);
+      setNotificationMessage('Emprunt effectué !');
       setShowModal(false);
       
       if (onBorrow) {
@@ -64,6 +69,13 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
     }
   };
 
+  const handleAddToCart = () => {
+    addToCart(book);
+    setNotificationMessage(`${book.title} ajouté au panier !`);
+    setShowNotification(true);
+    setShowModal(false);
+  };
+
   return (
     <>
       {/* Notification de succès */}
@@ -74,7 +86,7 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
               <FontAwesomeIcon icon={faCheckCircle} className="text-white" />
             </div>
             <p className="font-black text-sm uppercase tracking-widest">
-              Livre emprunté ! 14 jours.
+              {notificationMessage}
             </p>
           </div>
         </div>
@@ -104,7 +116,7 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
                   <div className="flex-1">
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Disponibilité</p>
                     <div className={`px-4 py-3 rounded-xl text-center font-black text-white ${availableCopies > 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`}>
-                      {availableCopies > 0 ? `${availableCopies} copie${availableCopies > 1 ? 's' : ''} libre${availableCopies > 1 ? 's' : ''}` : 'Épuisé'}
+                      {availableCopies > 0 ? `${availableCopies} copie${availableCopies > 1 ? 's' : ''} dispo${availableCopies > 1 ? 's' : ''}` : 'Épuisé'}
                     </div>
                   </div>
                 </div>
@@ -151,36 +163,53 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
                         <span className="font-mono font-bold text-slate-900">{isbn}</span>
                       </div>
                     )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 font-semibold">Prix :</span>
+                      <span className="font-bold text-blue-600 text-lg">${price.toFixed(2)}</span>
+                    </div>
                   </div>
 
                   <p className="text-slate-600 leading-relaxed text-sm">{description}</p>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 mt-8">
+                <div className="space-y-3 mt-8">
                   {!isLoggedIn ? (
                     <Link 
                       to="/login" 
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-3 rounded-2xl font-black text-center transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                      className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white py-3 rounded-2xl font-black text-center transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
                     >
                       <FontAwesomeIcon icon={faSignInAlt} /> Se connecter
                     </Link>
-                  ) : availableCopies > 0 ? (
-                    <button 
-                      onClick={handleBorrow}
-                      disabled={isLoading}
-                      className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-slate-400 disabled:to-slate-500 text-white py-3 rounded-2xl font-black transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 disabled:shadow-none active:scale-95"
-                    >
-                      <FontAwesomeIcon icon={faShoppingCart} />
-                      {isLoading ? 'Emprunt...' : 'Emprunter'}
-                    </button>
                   ) : (
-                    <button 
-                      disabled
-                      className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white py-3 rounded-2xl font-black cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      <FontAwesomeIcon icon={faLock} /> Indisponible
-                    </button>
+                    <>
+                      {availableCopies > 0 ? (
+                        <button 
+                          onClick={handleBorrow}
+                          disabled={isLoading}
+                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-slate-400 disabled:to-slate-500 text-white py-3 rounded-2xl font-black transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 disabled:shadow-none active:scale-95"
+                        >
+                          <FontAwesomeIcon icon={faBook} />
+                          {isLoading ? 'Emprunt...' : 'Emprunter (14 jours)'}
+                        </button>
+                      ) : (
+                        <button 
+                          disabled
+                          className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white py-3 rounded-2xl font-black cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          <FontAwesomeIcon icon={faLock} /> Indisponible à l\'emprunt
+                        </button>
+                      )}
+                      
+                      <button 
+                        onClick={handleAddToCart}
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-slate-400 disabled:to-slate-500 text-white py-3 rounded-2xl font-black transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30 disabled:shadow-none active:scale-95"
+                      >
+                        <FontAwesomeIcon icon={faShoppingCart} />
+                        {isLoading ? 'Ajout...' : `Acheter ($${price.toFixed(2)})`}
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -225,7 +254,7 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
             <div className="absolute top-4 right-4 flex flex-col gap-2">
               {availableCopies > 0 && (
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/50 backdrop-blur-sm">
-                  {availableCopies} libre
+                  {availableCopies} dispo{availableCopies > 1 ? 's' : ''}
                 </div>
               )}
               {availableCopies <= 0 && (
@@ -265,6 +294,14 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
             
             <p className="text-slate-500 text-xs line-clamp-2 mb-4 flex-1">{description}</p>
             
+            {/* Prix et Disponibilité */}
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-purple-600 font-black text-sm">${price.toFixed(2)}</span>
+              <span className={`text-xs font-black px-2 py-1 rounded-lg ${availableCopies > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                {availableCopies > 0 ? `${availableCopies} dispo` : 'Épuisé'}
+              </span>
+            </div>
+            
             {/* Buttons */}
             <div className="flex gap-2 relative z-10">
               <button 
@@ -273,14 +310,26 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
               >
                 <FontAwesomeIcon icon={faInfoCircle} /> Détails
               </button>
-              {isLoggedIn && availableCopies > 0 && (
-                <button 
-                  onClick={() => setShowModal(true)}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white w-11 h-11 rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 flex items-center justify-center active:scale-95"
-                  title="Emprunter"
-                >
-                  <FontAwesomeIcon icon={faShoppingCart} />
-                </button>
+              {isLoggedIn && (
+                <>
+                  {availableCopies > 0 && (
+                    <button 
+                      onClick={() => setShowModal(true)}
+                      className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white w-11 h-11 rounded-xl hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center active:scale-95"
+                      title="Emprunter"
+                    >
+                      <FontAwesomeIcon icon={faBook} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={handleAddToCart}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white w-11 h-11 rounded-xl hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 flex items-center justify-center active:scale-95"
+                    title="Ajouter au panier"
+                    disabled={isLoading}
+                  >
+                    <FontAwesomeIcon icon={faShoppingCart} />
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -329,6 +378,9 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
                     ISBN: {isbn}
                   </div>
                 )}
+                <div className="bg-purple-50 px-3 py-1 rounded-xl font-black text-purple-700 text-base">
+                  ${price.toFixed(2)}
+                </div>
                 <div className={`px-3 py-1 rounded-xl font-bold ${availableCopies > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                   {availableCopies > 0 ? `${availableCopies} disponible(s)` : 'Épuisé'}
                 </div>
@@ -344,29 +396,44 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
                 </div>
               )}
 
+
+
               <div className="flex flex-col gap-4">
-                {isLoggedIn && availableCopies > 0 && (
-                  <button 
-                    onClick={handleBorrow}
-                    disabled={isLoading}
-                    className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition flex items-center justify-center gap-3 shadow-xl shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FontAwesomeIcon icon={faBook} /> {isLoading ? 'Emprunt en cours...' : 'Emprunter (14 jours)'}
-                  </button>
-                )}
                 {!isLoggedIn && (
                   <Link 
                     to="/login" 
                     className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition flex items-center justify-center gap-3 shadow-xl shadow-blue-200"
                   >
-                    <FontAwesomeIcon icon={faSignInAlt} /> Se connecter pour emprunter
+                    <FontAwesomeIcon icon={faSignInAlt} /> Se connecter
                   </Link>
                 )}
-                {availableCopies <= 0 && (
-                  <div className="w-full bg-red-50 text-red-700 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
-                    <FontAwesomeIcon icon={faTimes} /> Ce livre n'est pas disponible
-                  </div>
+
+                {isLoggedIn && (
+                  <>
+                    {availableCopies > 0 ? (
+                      <button 
+                        onClick={handleBorrow}
+                        disabled={isLoading}
+                        className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition flex items-center justify-center gap-3 shadow-xl shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FontAwesomeIcon icon={faBook} /> {isLoading ? 'Emprunt en cours...' : 'Emprunter (14 jours)'}
+                      </button>
+                    ) : (
+                      <div className="w-full bg-red-50 text-red-700 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
+                        <FontAwesomeIcon icon={faTimes} /> Non disponible à l'emprunt
+                      </div>
+                    )}
+
+                    <button 
+                      onClick={handleAddToCart}
+                      disabled={isLoading}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:from-purple-500 hover:to-pink-500 transition flex items-center justify-center gap-3 shadow-xl shadow-purple-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FontAwesomeIcon icon={faShoppingCart} /> {isLoading ? 'Ajout en cours...' : `Acheter ($${price.toFixed(2)})`}
+                    </button>
+                  </>
                 )}
+
                 {bookId && (
                   <Link 
                     to={`/book/${bookId}`} 

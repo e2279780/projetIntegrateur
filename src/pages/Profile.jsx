@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUser, faLock, faMapMarkerAlt, faCreditCard, 
-  faCamera, faCheckCircle, faEnvelope, faPlus, faSpinner, faExclamationTriangle 
+  faCamera, faCheckCircle, faEnvelope, faPlus, faSpinner, faExclamationTriangle, faTimes 
 } from '@fortawesome/free-solid-svg-icons';
-import { authService } from '../services';
+import { authService, databaseService } from '../services';
 
 const SectionTitle = ({ icon, title }) => (
   <div className="flex items-center gap-3 mb-6">
@@ -19,6 +19,33 @@ export default function Profile({ user, role }) {
   const [activeTab, setActiveTab] = useState('infos');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [cardInfo, setCardInfo] = useState(null);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [cardLoading, setCardLoading] = useState(true);
+  const [cardForm, setCardForm] = useState({
+    cardholderName: '',
+    cardNumber: '',
+    expiryDate: '',
+    cvv: ''
+  });
+  
+  // Charger les informations de carte au montage
+  useEffect(() => {
+    const loadCardInfo = async () => {
+      try {
+        if (user?.id || user?.uid) {
+          const info = await databaseService.getCardInfo(user.id || user.uid);
+          setCardInfo(info);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement de la carte:', err);
+      } finally {
+        setCardLoading(false);
+      }
+    };
+
+    loadCardInfo();
+  }, [user]);
   
   // Construire le nom d'affichage à partir des données Firebase
   const displayName = user?.firstName 
@@ -52,6 +79,70 @@ export default function Profile({ user, role }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveCard = async (e) => {
+    e.preventDefault();
+    setCardLoading(true);
+    setStatus({ type: '', message: '' });
+
+    try {
+      // Validation simple
+      if (!cardForm.cardholderName || !cardForm.cardNumber || !cardForm.expiryDate) {
+        throw new Error('Veuillez remplir tous les champs obligatoires');
+      }
+
+      // Garder seulement les 4 derniers chiffres pour la sécurité
+      const lastDigits = cardForm.cardNumber.slice(-4);
+
+      const cardData = {
+        cardNumber: lastDigits,
+        expiryDate: cardForm.expiryDate,
+        cardholderName: cardForm.cardholderName,
+        isConfigured: true
+      };
+
+      await databaseService.saveCardInfo(user.id || user.uid, cardData);
+      
+      setCardInfo(cardData);
+      setShowAddCard(false);
+      setCardForm({ cardholderName: '', cardNumber: '', expiryDate: '', cvv: '' });
+      
+      setStatus({ 
+        type: 'success', 
+        message: 'Carte bancaire enregistrée avec succès!' 
+      });
+    } catch (err) {
+      setStatus({ 
+        type: 'error', 
+        message: err.message || 'Erreur lors de l\'enregistrement de la carte' 
+      });
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
+  const handleCardFormChange = (e) => {
+    const { name, value } = e.target;
+    let formattedValue = value;
+
+    // Formater le numéro de carte
+    if (name === 'cardNumber') {
+      formattedValue = value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+    }
+    // Formater la date d'expiration
+    if (name === 'expiryDate') {
+      formattedValue = value.replace(/\D/g, '');
+      if (formattedValue.length >= 2) {
+        formattedValue = formattedValue.slice(0, 2) + '/' + formattedValue.slice(2, 4);
+      }
+    }
+    // Limiter le CVV à 3-4 chiffres
+    if (name === 'cvv') {
+      formattedValue = value.replace(/\D/g, '').slice(0, 4);
+    }
+
+    setCardForm(prev => ({ ...prev, [name]: formattedValue }));
   };
 
   return (
@@ -200,29 +291,167 @@ export default function Profile({ user, role }) {
         {activeTab === 'paiement' && (
           <div className="animate-in fade-in slide-in-from-right-4">
             <SectionTitle icon={faCreditCard} title="Modes de paiement" />
-            <div className="space-y-6">
-              <div className="p-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
-                   <FontAwesomeIcon icon={faCreditCard} size="5x" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-8">Carte enregistrée</p>
-                  <p className="text-2xl font-mono mb-8 tracking-widest">•••• •••• •••• 4242</p>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-slate-400 text-[10px] uppercase font-black tracking-tighter">Expire le</p>
-                      <p className="font-bold tracking-widest text-lg">12 / 28</p>
+            
+            {status.message && (
+              <div className={`mb-6 p-4 rounded-2xl font-bold text-sm flex items-center gap-3 ${
+                status.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+              }`}>
+                <FontAwesomeIcon icon={status.type === 'success' ? faCheckCircle : faExclamationTriangle} />
+                {status.message}
+              </div>
+            )}
+
+            {cardLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <FontAwesomeIcon icon={faSpinner} className="animate-spin text-blue-600" size="2x" />
+              </div>
+            ) : cardInfo && cardInfo.isConfigured ? (
+              <div className="space-y-6">
+                <div className="p-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
+                    <FontAwesomeIcon icon={faCreditCard} size="5x" />
+                  </div>
+                  <div className="relative z-10">
+                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-8">Carte enregistrée</p>
+                    <p className="text-2xl font-mono mb-8 tracking-widest">•••• •••• •••• {cardInfo.cardNumber}</p>
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-slate-400 text-[10px] uppercase font-black tracking-tighter">Expire le</p>
+                        <p className="font-bold tracking-widest text-lg">{cardInfo.expiryDate}</p>
+                      </div>
+                      <p className="text-slate-300 text-sm font-bold">{cardInfo.cardholderName}</p>
                     </div>
-                    <button className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl text-xs font-bold transition backdrop-blur-md border border-white/10 uppercase tracking-widest">Modifier</button>
                   </div>
                 </div>
-              </div>
 
-              <button className="w-full border-2 border-dashed border-gray-200 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50/50 transition-all group">
-                <FontAwesomeIcon icon={faPlus} className="text-2xl mb-2 group-hover:scale-125 transition-transform" />
-                <span className="font-black text-sm uppercase tracking-widest">Lier une nouvelle carte</span>
-              </button>
-            </div>
+                <button 
+                  onClick={() => setShowAddCard(true)}
+                  className="w-full border-2 border-dashed border-gray-200 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50/50 transition-all group"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="text-2xl mb-2 group-hover:scale-125 transition-transform" />
+                  <span className="font-black text-sm uppercase tracking-widest">Mettre à jour la carte</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="p-8 bg-yellow-50 border-2 border-yellow-200 rounded-[2.5rem] flex flex-col items-center justify-center text-yellow-700">
+                  <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl mb-3" />
+                  <p className="font-black text-center">Aucune carte configurée</p>
+                  <p className="text-sm text-yellow-600 mt-2 text-center">
+                    Vous devez configurer une carte bancaire pour pouvoir acheter des livres
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => setShowAddCard(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white p-8 rounded-[2.5rem] flex flex-col items-center justify-center font-black transition-all shadow-lg shadow-blue-200"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="text-2xl mb-2" />
+                  <span className="text-sm uppercase tracking-widest">Ajouter une carte bancaire</span>
+                </button>
+              </div>
+            )}
+
+            {/* Modal Ajouter Carte */}
+            {showAddCard && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-black text-slate-800">Ajouter une carte</h3>
+                    <button 
+                      onClick={() => setShowAddCard(false)}
+                      className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-red-100 transition"
+                    >
+                      <FontAwesomeIcon icon={faTimes} className="text-slate-700 hover:text-red-600" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveCard} className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">
+                        Titulaire de la carte
+                      </label>
+                      <input 
+                        type="text"
+                        name="cardholderName"
+                        value={cardForm.cardholderName}
+                        onChange={handleCardFormChange}
+                        placeholder="Jean Dupont"
+                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl outline-none focus:border-blue-500 focus:bg-white transition font-bold text-slate-700"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">
+                        Numéro de carte
+                      </label>
+                      <input 
+                        type="text"
+                        name="cardNumber"
+                        value={cardForm.cardNumber}
+                        onChange={handleCardFormChange}
+                        placeholder="1234 5678 9012 3456"
+                        maxLength="19"
+                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl outline-none focus:border-blue-500 focus:bg-white transition font-mono text-slate-700"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">
+                          Date d'expiration
+                        </label>
+                        <input 
+                          type="text"
+                          name="expiryDate"
+                          value={cardForm.expiryDate}
+                          onChange={handleCardFormChange}
+                          placeholder="MM/YY"
+                          maxLength="5"
+                          className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl outline-none focus:border-blue-500 focus:bg-white transition font-mono text-slate-700"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">
+                          CVV
+                        </label>
+                        <input 
+                          type="text"
+                          name="cvv"
+                          value={cardForm.cvv}
+                          onChange={handleCardFormChange}
+                          placeholder="123"
+                          maxLength="4"
+                          className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl outline-none focus:border-blue-500 focus:bg-white transition font-mono text-slate-700"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 flex gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => setShowAddCard(false)}
+                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-slate-700 px-6 py-3 rounded-xl font-black transition"
+                      >
+                        Annuler
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={cardLoading}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white px-6 py-3 rounded-xl font-black transition flex items-center justify-center gap-2"
+                      >
+                        {cardLoading ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : null}
+                        {cardLoading ? 'Enregistrement...' : 'Enregistrer'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

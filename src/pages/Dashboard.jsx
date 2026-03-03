@@ -6,14 +6,21 @@ import {
   faClock, 
   faExclamationTriangle, 
   faCheckCircle, 
-  faBook
+  faBook,
+  faShoppingCart,
+  faShoppingBag,
+  faCalendar,
+  faDollarSign
 } from '@fortawesome/free-solid-svg-icons';
 import { getDaysRemaining } from '../utils/dateUtils';
+import { databaseService } from '../services';
 
 export default function Dashboard({ user, role, refreshTrigger }) {
   const [borrows, setBorrows] = useState([]);
+  const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('borrows');
 
   const userId = user?.uid;
 
@@ -24,7 +31,7 @@ export default function Dashboard({ user, role, refreshTrigger }) {
   const initial = displayName.charAt(0).toUpperCase();
 
   useEffect(() => {
-    const fetchBorrows = async () => {
+    const fetchData = async () => {
       if (!userId) {
         setLoading(false);
         return;
@@ -33,15 +40,23 @@ export default function Dashboard({ user, role, refreshTrigger }) {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`/api/borrows/${userId}`);
-        
-        if (!response.ok) {
+        // Récupérer les emprunts
+        const borrowResponse = await fetch(`/api/borrows/${userId}`);
+        if (!borrowResponse.ok) {
           throw new Error('Erreur lors de la récupération des emprunts');
         }
-        
-        const data = await response.json();
-        const activeBorrows = (data || []).filter(b => !b.returnDate);
+        const borrowData = await borrowResponse.json();
+        const activeBorrows = (borrowData || []).filter(b => !b.returnDate);
         setBorrows(activeBorrows);
+
+        // Récupérer les achats
+        try {
+          const purchasesData = await databaseService.getUserPurchases(userId);
+          setPurchases(purchasesData || []);
+        } catch (purchaseErr) {
+          console.error('Erreur lors de la récupération des achats:', purchaseErr);
+          setPurchases([]);
+        }
       } catch (err) {
         console.error('Erreur Dashboard:', err);
         setError(err.message);
@@ -50,7 +65,7 @@ export default function Dashboard({ user, role, refreshTrigger }) {
       }
     };
 
-    fetchBorrows();
+    fetchData();
   }, [userId, refreshTrigger]);
 
   const handleReturnBook = async (borrowId) => {
@@ -136,11 +151,11 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                     <div className="grid grid-cols-2 gap-4 pt-4">
                       <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
                         <p className="text-3xl font-black">{borrows.length}</p>
-                        <p className="text-[8px] font-bold text-blue-100 uppercase tracking-widest mt-2">En lecture</p>
+                        <p className="text-[8px] font-bold text-blue-100 uppercase tracking-widest mt-2">Emprunts</p>
                       </div>
-                      <div className={`rounded-2xl p-4 border backdrop-blur-md ${overdueCount > 0 ? 'bg-red-500/30 border-red-400/50' : 'bg-emerald-500/30 border-emerald-400/50'}`}>
-                        <p className="text-3xl font-black">{overdueCount}</p>
-                        <p className="text-[8px] font-bold uppercase tracking-widest mt-2">{overdueCount > 0 ? 'En retard' : 'À jour'}</p>
+                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                        <p className="text-3xl font-black">{purchases.length}</p>
+                        <p className="text-[8px] font-bold text-blue-100 uppercase tracking-widest mt-2">Achats</p>
                       </div>
                     </div>
                   </div>
@@ -155,16 +170,23 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                 </Link>
 
                 {/* Quick Stats */}
-                {borrows.length > 0 && (
+                {(borrows.length > 0 || purchases.length > 0) && (
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
                     <h3 className="font-black text-slate-900 text-sm uppercase tracking-wider">Statistiques</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg group hover:bg-blue-100 transition-colors">
                         <div className="flex items-center gap-2">
                           <FontAwesomeIcon icon={faBook} className="text-blue-600 text-lg" />
-                          <span className="font-bold text-sm text-slate-700">Livres</span>
+                          <span className="font-bold text-sm text-slate-700">Emprunts</span>
                         </div>
                         <span className="font-black text-blue-600">{borrows.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg group hover:bg-purple-100 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <FontAwesomeIcon icon={faShoppingCart} className="text-purple-600 text-lg" />
+                          <span className="font-bold text-sm text-slate-700">Achats</span>
+                        </div>
+                        <span className="font-black text-purple-600">{purchases.length}</span>
                       </div>
                       {dueCount > 0 && (
                         <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg group hover:bg-orange-100 transition-colors">
@@ -191,22 +213,66 @@ export default function Dashboard({ user, role, refreshTrigger }) {
 
               {/* --- CONTENU PRINCIPAL --- */}
               <div className="flex-1 space-y-8">
-                {/* Header */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-full flex items-center justify-center">
-                      <FontAwesomeIcon icon={faBookReader} className="text-white" />
-                    </div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mes emprunts</h1>
-                  </div>
-                  <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">
-                    {borrows.length} livre{borrows.length > 1 ? 's' : ''} en cours de lecture
-                  </p>
-                  <div className="h-1.5 w-24 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full"></div>
+                {/* Onglets */}
+                <div className="flex gap-4 border-b-2 border-gray-200">
+                  <button
+                    onClick={() => setActiveTab('borrows')}
+                    className={`px-6 py-4 font-black text-sm uppercase tracking-widest transition-all ${
+                      activeTab === 'borrows'
+                        ? 'text-blue-600 border-b-4 border-blue-600 -mb-[2px]'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faBookReader} className="mr-2" />
+                    Emprunts ({borrows.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('purchases')}
+                    className={`px-6 py-4 font-black text-sm uppercase tracking-widest transition-all ${
+                      activeTab === 'purchases'
+                        ? 'text-purple-600 border-b-4 border-purple-600 -mb-[2px]'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faShoppingCart} className="mr-2" />
+                    Achats ({purchases.length})
+                  </button>
                 </div>
 
+                {/* Header - Emprunts */}
+                {activeTab === 'borrows' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon={faBookReader} className="text-white" />
+                      </div>
+                      <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mes emprunts</h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">
+                      {borrows.length} livre{borrows.length > 1 ? 's' : ''} en cours de lecture
+                    </p>
+                    <div className="h-1.5 w-24 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full"></div>
+                  </div>
+                )}
+
+                {/* Header - Achats */}
+                {activeTab === 'purchases' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center">
+                        <FontAwesomeIcon icon={faShoppingCart} className="text-white" />
+                      </div>
+                      <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mes achats</h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">
+                      {purchases.length} livre{purchases.length > 1 ? 's' : ''} acheté{purchases.length > 1 ? 's' : ''}
+                    </p>
+                    <div className="h-1.5 w-24 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full"></div>
+                  </div>
+                )}
+
                 {/* Emprunts Section */}
-                {loading ? (
+                {activeTab === 'borrows' && loading ? (
                   <div className="flex items-center justify-center py-20">
                     <div className="text-center space-y-4">
                       <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center">
@@ -215,11 +281,11 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                       <p className="font-black text-slate-400 uppercase tracking-widest">Mise à jour...</p>
                     </div>
                   </div>
-                ) : error ? (
+                ) : activeTab === 'borrows' && error ? (
                   <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6 text-red-700 font-bold text-center shadow-sm">
                     {error}
                   </div>
-                ) : borrows.length === 0 ? (
+                ) : activeTab === 'borrows' && borrows.length === 0 ? (
                   <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-16 text-center space-y-6 hover-lift">
                     <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl flex items-center justify-center">
                       <FontAwesomeIcon icon={faBook} size="2x" className="text-blue-400" />
@@ -235,7 +301,7 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                       <FontAwesomeIcon icon={faBook} className="mr-2" /> Découvrir le catalogue
                     </Link>
                   </div>
-                ) : (
+                ) : activeTab === 'borrows' ? (
                   <div className="space-y-4">
                     {borrows.map(borrow => {
                       const days = getDaysRemaining(borrow.returnDueDate);
@@ -324,7 +390,77 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                       );
                     })}
                   </div>
-                )}
+                ) : null}
+
+                {/* Achats Section */}
+                {activeTab === 'purchases' && purchases.length === 0 ? (
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-16 text-center space-y-6 hover-lift">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center">
+                      <FontAwesomeIcon icon={faShoppingCart} size="2x" className="text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-slate-400 font-black uppercase tracking-widest text-sm mb-2">Aucun achat effectué</p>
+                      <p className="text-slate-500 text-sm">Commencez par acheter un livre dans notre catalogue</p>
+                    </div>
+                    <Link 
+                      to="/inventory"
+                      className="inline-block bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 shadow-lg shadow-purple-500/30"
+                    >
+                      <FontAwesomeIcon icon={faShoppingBag} className="mr-2" /> Découvrir le catalogue
+                    </Link>
+                  </div>
+                ) : activeTab === 'purchases' ? (
+                  <div className="space-y-4">
+                    {purchases.map(purchase => (
+                      <div 
+                        key={purchase.id} 
+                        className="relative overflow-hidden rounded-3xl border border-purple-200 bg-gradient-to-r from-white to-purple-50/50 backdrop-blur-sm transition-all duration-300 hover-lift"
+                      >
+                        {/* Accent bar gauche */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500"></div>
+
+                        <div className="p-6 flex flex-col sm:flex-row gap-6">
+                          {/* Couverture */}
+                          <div className="relative shrink-0 w-full sm:w-28 h-40 sm:h-full bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl overflow-hidden shadow-md border border-white/50 hover-lift">
+                            <img 
+                              src={purchase.bookCoverUrl || 'https://placehold.co/300x450?text=Livre'} 
+                              className="w-full h-full object-cover" 
+                              alt={purchase.bookTitle}
+                              onError={(e) => { e.target.src = "https://placehold.co/300x450?text=Livre"; }}
+                            />
+                          </div>
+                          
+                          {/* Contenu */}
+                          <div className="flex-1 flex flex-col justify-between space-y-4">
+                            <div className="space-y-2">
+                              <h3 className="font-black text-slate-900 text-xl leading-tight line-clamp-2">{purchase.bookTitle}</h3>
+                              <p className="text-purple-600 font-bold text-xs uppercase tracking-widest">{purchase.bookAuthor}</p>
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                              {/* Info Card */}
+                              <div className="flex-1 p-4 rounded-2xl flex items-center gap-3 bg-purple-500/10 border border-purple-300/30">
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <FontAwesomeIcon icon={faDollarSign} className="text-purple-600 text-sm" />
+                                    <p className="font-black text-slate-900">${purchase.bookPrice}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <FontAwesomeIcon icon={faCalendar} className="text-purple-600" />
+                                    <p className="text-slate-600">{new Date(purchase.purchaseDate).toLocaleDateString('fr-FR')}</p>
+                                  </div>
+                                </div>
+                                <span className="px-3 py-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white font-black text-xs rounded-full">
+                                  Acheté
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

@@ -21,7 +21,10 @@ import {
   faStar,
   faNoteSticky,
   faImage,
-  faTimes
+  faTimes,
+  faDollarSign,
+  faShoppingCart,
+  faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 import { databaseService } from '../services';
 import { getDaysRemaining, formatDueDate } from '../utils/dateUtils';
@@ -33,6 +36,8 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('inventory');
   const [borrows, setBorrows] = useState([]);
   const [borrowsLoading, setBorrowsLoading] = useState(false);
+  const [purchases, setPurchases] = useState([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
   const [alertModal, setAlertModal] = useState({ isOpen: false, borrowId: null, userId: '', userName: '', bookTitle: '', email: '' });
   const [alertMessage, setAlertMessage] = useState('');
   const [showAddBookModal, setShowAddBookModal] = useState(false);
@@ -47,6 +52,7 @@ export default function Admin() {
     pages: 0,
     language: 'Fr',
     rating: 0,
+    price: 0,
     totalCopies: 1,
     coverImageUrl: '',
   });
@@ -201,6 +207,7 @@ export default function Admin() {
         pages: 0,
         language: 'Fr',
         rating: 0,
+        price: 0,
         totalCopies: 1,
         coverImageUrl: '',
       });
@@ -215,6 +222,41 @@ export default function Admin() {
     }
   };
 
+  const fetchPurchases = async () => {
+    try {
+      setPurchasesLoading(true);
+      // Récupérer tous les achats depuis databaseService
+      const purchasesData = await databaseService.getAllPurchases();
+      
+      // Enrichir les données avec les informations utilisateur
+      const enrichedPurchases = await Promise.all(
+        purchasesData.map(async (purchase) => {
+          try {
+            const user = await databaseService.getUserById(purchase.userId);
+            return {
+              ...purchase,
+              userName: user?.name || 'Inconnu',
+              userEmail: user?.email || 'Inconnu',
+            };
+          } catch {
+            return {
+              ...purchase,
+              userName: 'Inconnu',
+              userEmail: 'Inconnu',
+            };
+          }
+        })
+      );
+      
+      setPurchases(enrichedPurchases || []);
+    } catch (err) {
+      console.error('Erreur lors du chargement des achats:', err);
+      setPurchases([]);
+    } finally {
+      setPurchasesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -222,6 +264,8 @@ export default function Admin() {
   useEffect(() => {
     if (activeTab === 'borrows') {
       fetchBorrows();
+    } else if (activeTab === 'purchases') {
+      fetchPurchases();
     }
   }, [activeTab]);
 
@@ -256,6 +300,17 @@ export default function Admin() {
         >
           <FontAwesomeIcon icon={faUsers} className="mr-2" />
           Emprunts ({borrows.filter(b => !b.returnDate).length})
+        </button>
+        <button
+          onClick={() => setActiveTab('purchases')}
+          className={`px-6 py-4 font-black text-sm uppercase tracking-widest transition-all ${
+            activeTab === 'purchases'
+              ? 'text-blue-600 border-b-4 border-blue-600'
+              : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <FontAwesomeIcon icon={faShoppingCart} className="mr-2" />
+          Achats ({purchases.length})
         </button>
       </div>
 
@@ -570,6 +625,105 @@ export default function Admin() {
         </div>
       )}
 
+      {/* CONTENU ACHATS */}
+      {activeTab === 'purchases' && (
+        <div className="space-y-8">
+          {/* Statistiques */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4">
+                <FontAwesomeIcon icon={faShoppingCart} />
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Achats</p>
+              <p className="text-3xl font-black text-slate-900 italic">{purchases.length}</p>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
+                <FontAwesomeIcon icon={faDollarSign} />
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Revenu Total</p>
+              <p className="text-3xl font-black text-slate-900 italic">
+                ${purchases.reduce((sum, p) => sum + (p.bookPrice || 0), 0).toFixed(2)}
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                <FontAwesomeIcon icon={faCheck} />
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complétés</p>
+              <p className="text-3xl font-black text-slate-900 italic">
+                {purchases.filter(p => p.status === 'completed').length}
+              </p>
+            </div>
+          </div>
+
+          {/* Tableau des achats */}
+          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+            <div className="p-8 border-b-2 border-gray-100">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <FontAwesomeIcon icon={faShoppingCart} className="text-purple-600" />
+                Tous les achats
+              </h3>
+            </div>
+
+            {purchasesLoading ? (
+              <div className="p-8 text-center">
+                <FontAwesomeIcon icon={faSpinner} className="text-4xl text-blue-600 animate-spin mb-4" />
+                <p className="text-slate-600 font-bold">Chargement des achats...</p>
+              </div>
+            ) : purchases.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-slate-400 font-bold">Aucun achat pour le moment</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b-2 border-gray-100">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Utilisateur</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Livre</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Auteur</th>
+                      <th className="px-6 py-4 text-right text-[10px] font-black text-slate-600 uppercase tracking-wider">Prix</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {purchases.map((purchase) => (
+                      <tr key={purchase.id} className="hover:bg-slate-50 transition">
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-bold text-slate-900">{purchase.userName}</p>
+                            <p className="text-xs text-slate-400">{purchase.userEmail}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-slate-900">{purchase.bookTitle}</td>
+                        <td className="px-6 py-4 text-slate-600">{purchase.bookAuthor}</td>
+                        <td className="px-6 py-4 text-right font-bold text-purple-600">${(purchase.bookPrice || 0).toFixed(2)}</td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {purchase.purchaseDate?.toDate?.().toLocaleDateString('fr-FR') || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            purchase.status === 'completed'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {purchase.status === 'completed' ? 'Complété' : 'En attente'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* MODAL AJOUTER LIVRE */}
       {showAddBookModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
@@ -769,6 +923,21 @@ export default function Admin() {
                           ))}
                         </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-slate-600 mb-2 block tracking-wider flex items-center gap-1">
+                        <FontAwesomeIcon icon={faDollarSign} className="w-3" /> Prix ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={addBookData.price}
+                        onChange={(e) => setAddBookData({...addBookData, price: Math.max(0, parseFloat(e.target.value) || 0)})}
+                        className="w-full bg-white border-2 border-amber-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                        min="0"
+                        step="0.01"
+                        placeholder="29.99"
+                      />
                     </div>
 
                     <div>

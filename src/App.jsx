@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Services et Contexte
 import { authService } from './services'; 
 import { useUser } from './context/useUser';
+import { CartProvider } from './context/CartContext';
 
 // Pages
 import Home from './pages/Home';
@@ -21,7 +22,8 @@ import Profile from './pages/Profile';
 import Frais from './pages/Frais';
 import Admin from './pages/Admin';
 import BookDetail from './pages/BookDetail'; 
-import InitBooks from './pages/InitBooks'; 
+import InitBooks from './pages/InitBooks';
+import Cart from './pages/Cart'; 
 
 export default function App() {
   // Utilisation exclusive du contexte pour la source de vérité
@@ -70,8 +72,9 @@ export default function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex flex-col font-sans relative">
+    <CartProvider>
+      <Router>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex flex-col font-sans relative">
         
         {/* Toast de confirmation de déconnexion */}
         {showLogoutToast && (
@@ -119,6 +122,12 @@ export default function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/cart" element={
+              <ProtectedRoute>
+                <Cart isLoggedIn={isLoggedIn} userId={user?.uid} />
+              </ProtectedRoute>
+            } />
+
             {/* Routes Protégées (Administrateur uniquement) */}
             <Route path="/admin" element={
               <ProtectedRoute adminOnly={true}>
@@ -142,5 +151,6 @@ export default function App() {
         </footer>
       </div>
     </Router>
+    </CartProvider>
   );
 }
