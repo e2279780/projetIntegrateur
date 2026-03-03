@@ -445,10 +445,6 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                                     <FontAwesomeIcon icon={faDollarSign} className="text-purple-600 text-sm" />
                                     <p className="font-black text-slate-900">${purchase.bookPrice}</p>
                                   </div>
-                                  <div className="flex items-center gap-2 text-xs">
-                                    <FontAwesomeIcon icon={faCalendar} className="text-purple-600" />
-                                    <p className="text-slate-600">{new Date(purchase.purchaseDate).toLocaleDateString('fr-FR')}</p>
-                                  </div>
                                 </div>
                                 <span className="px-3 py-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white font-black text-xs rounded-full">
                                   Acheté
