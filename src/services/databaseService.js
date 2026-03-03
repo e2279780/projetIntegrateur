@@ -218,6 +218,70 @@ export const deleteBook = async (userRole, bookId) => {
 // ============= OPÉRATIONS SUR LES EMPRUNTS =============
 
 /**
+ * Constante pour les frais de retard (en dollars par jour)
+ */
+const LATE_FEE_PER_DAY = 1.50;
+
+/**
+ * Calculer les frais de retard pour un emprunt
+ * @param {Date} returnDueDate - Date limite prévue
+ * @param {Date} returnDate - Date de retour réel (par défaut: maintenant)
+ * @returns {Object} {daysOverdue: number, lateFees: number}
+ */
+const calculateLateFees = (returnDueDate, returnDate = new Date()) => {
+  const dueDateObj = returnDueDate instanceof Date ? returnDueDate : returnDueDate.toDate();
+  const daysOverdue = Math.max(0, Math.ceil((returnDate - dueDateObj) / (1000 * 60 * 60 * 24)));
+  const lateFees = daysOverdue * LATE_FEE_PER_DAY;
+  
+  return {
+    daysOverdue,
+    lateFees: Math.round(lateFees * 100) / 100 // Arrondir à 2 décimales
+  };
+};
+
+/**
+ * Vérifier si l'utilisateur a des frais de retard en attente de paiement
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<Object>} {hasOutstandingCharges: boolean, totalCharges: number, overdueBooks: Array}
+ */
+export const checkUserOutstandingCharges = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'borrows'),
+      where('userId', '==', userId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    let totalCharges = 0;
+    const overdueBooks = [];
+    
+    querySnapshot.docs.forEach(doc => {
+      const borrow = doc.data();
+      // Vérifier les frais impayés: isOverdue = true ET feesSettled = false
+      if (borrow.isOverdue && !borrow.feesSettled) {
+        totalCharges += (borrow.lateFees || 0);
+        overdueBooks.push({
+          borrowId: doc.id,
+          bookId: borrow.bookId,
+          daysOverdue: borrow.daysOverdue || 0,
+          lateFees: borrow.lateFees || 0,
+          returnDueDate: borrow.returnDueDate
+        });
+      }
+    });
+
+    return {
+      hasOutstandingCharges: totalCharges > 0,
+      totalCharges: Math.round(totalCharges * 100) / 100,
+      overdueBooks
+    };
+  } catch (error) {
+    console.error('Erreur lors de la vérification des frais en retard:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
  * Créer un emprunt
  * @param {string} userId - ID de l'utilisateur
  * @param {string} bookId - ID du livre
@@ -226,6 +290,12 @@ export const deleteBook = async (userRole, bookId) => {
  */
 export const createBorrow = async (userId, bookId, daysToKeep = 14) => {
   try {
+    // Vérifier si l'utilisateur a des frais en retard
+    const chargesCheck = await checkUserOutstandingCharges(userId);
+    if (chargesCheck.hasOutstandingCharges) {
+      throw new Error(`Vous avez des frais de retard impayés (${chargesCheck.totalCharges}$). Veuillez les régler avant d'emprunter un autre livre.`);
+    }
+
     // Vérifier si le livre existe et est disponible
     const book = await getBookById(bookId);
     if (book.availableCopies <= 0) {
@@ -257,6 +327,9 @@ export const createBorrow = async (userId, bookId, daysToKeep = 14) => {
       returnDueDate: Timestamp.fromDate(returnDueDate),
       returnDate: null, // null jusqu'au retour
       isOverdue: false,
+      daysOverdue: 0,
+      lateFees: 0,
+      feesSettled: false,
       createdAt: Timestamp.now(),
     });
 
@@ -275,6 +348,7 @@ export const createBorrow = async (userId, bookId, daysToKeep = 14) => {
 /**
  * Retourner un livre emprunté
  * @param {string} borrowId - ID de l'emprunt
+ * @returns {Promise<Object>} {isOverdue: boolean, daysOverdue: number, lateFees: number}
  */
 export const returnBorrow = async (borrowId) => {
   try {
@@ -289,10 +363,29 @@ export const returnBorrow = async (borrowId) => {
       throw new Error('Ce livre a déjà été retourné');
     }
 
-    // Mettre à jour l'emprunt
+    const returnDateNow = new Date();
+    const isOverdue = returnDateNow > borrowData.returnDueDate.toDate();
+    
+    // Calculer les frais de retard s'il y a lieu
+    let daysOverdue = 0;
+    let lateFees = 0;
+    
+    if (isOverdue) {
+      const { daysOverdue: days, lateFees: fees } = calculateLateFees(
+        borrowData.returnDueDate.toDate(),
+        returnDateNow
+      );
+      daysOverdue = days;
+      lateFees = fees;
+    }
+
+    // Mettre à jour l'emprunt avec les frais
     await updateDoc(doc(db, 'borrows', borrowId), {
       returnDate: Timestamp.now(),
-      isOverdue: new Date() > borrowData.returnDueDate.toDate(),
+      isOverdue,
+      daysOverdue,
+      lateFees,
+      updatedAt: Timestamp.now(),
     });
 
     // Incrémenter le nombre de copies disponibles
@@ -300,8 +393,158 @@ export const returnBorrow = async (borrowId) => {
     await updateDoc(doc(db, 'books', borrowData.bookId), {
       availableCopies: book.availableCopies + 1,
     });
+
+    return {
+      isOverdue,
+      daysOverdue,
+      lateFees
+    };
   } catch (error) {
     console.error('Erreur lors du retour du livre:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Obtenir les emprunts en retard d'un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<Array>} Emprunts en retard avec frais calculés
+ */
+export const getUserOverdueBooks = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'borrows'),
+      where('userId', '==', userId),
+      where('returnDate', '==', null)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const now = new Date();
+    const overdueBooks = [];
+
+    querySnapshot.docs.forEach(doc => {
+      const borrow = doc.data();
+      const dueDate = borrow.returnDueDate.toDate();
+      
+      if (now > dueDate) {
+        const { daysOverdue, lateFees } = calculateLateFees(dueDate, now);
+        overdueBooks.push({
+          borrowId: doc.id,
+          ...borrow,
+          daysOverdue,
+          lateFees,
+        });
+      }
+    });
+
+    return overdueBooks;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des emprunts en retard:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Payer les frais de retard pour des emprunts (marquer les frais comme réglés)
+ * @param {string} userId - ID de l'utilisateur
+ * @param {Array<string>} borrowIds - IDs des emprunts à payer
+ * @returns {Promise<Object>} Détails du paiement
+ */
+export const payOverdueCharges = async (userId, borrowIds = []) => {
+  try {
+    let totalPaid = 0;
+    const paymentDetails = [];
+
+    // Si pas de borrowIds spécifiés, payer tous les emprunts en retard
+    let borrowsToSettle = borrowIds;
+    
+    if (borrowsToSettle.length === 0) {
+      const overdueBooks = await getUserOverdueBooks(userId);
+      borrowsToSettle = overdueBooks.map(b => b.borrowId);
+    }
+
+    // Mettre à jour chaque emprunt
+    for (const borrowId of borrowsToSettle) {
+      const borrowDoc = await getDoc(doc(db, 'borrows', borrowId));
+      
+      if (borrowDoc.exists()) {
+        const borrowData = borrowDoc.data();
+        
+        // Vérifier que c'est l'utilisateur correct
+        if (borrowData.userId !== userId) {
+          throw new Error('Accès refusé: cet emprunt ne vous appartient pas');
+        }
+
+        const lateFees = borrowData.lateFees || 0;
+        totalPaid += lateFees;
+
+        await updateDoc(doc(db, 'borrows', borrowId), {
+          feesSettled: true,
+          feesSettledDate: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+
+        paymentDetails.push({
+          borrowId,
+          lateFees,
+          settled: true
+        });
+      }
+    }
+
+    // Créer un enregistrement de paiement
+    const paymentRecord = await addDoc(collection(db, 'payments'), {
+      userId,
+      totalAmount: Math.round(totalPaid * 100) / 100,
+      borrowIds: borrowsToSettle,
+      paymentDate: Timestamp.now(),
+      type: 'late_fees',
+      status: 'completed',
+      createdAt: Timestamp.now(),
+    });
+
+    return {
+      paymentId: paymentRecord.id,
+      totalPaid: Math.round(totalPaid * 100) / 100,
+      borrowsSettled: borrowsToSettle.length,
+      paymentDetails
+    };
+  } catch (error) {
+    console.error('Erreur lors du paiement des frais:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Obtenir les emprunts avec frais impayés
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<Array>} Emprunts avec frais impayés
+ */
+export const getUnpaidOverdueCharges = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'borrows'),
+      where('userId', '==', userId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const unpaidCharges = [];
+
+    querySnapshot.docs.forEach(doc => {
+      const borrow = doc.data();
+      // Frais impayés: isOverdue = true ET feesSettled = false
+      if (borrow.isOverdue && !borrow.feesSettled && borrow.returnDate) {
+        unpaidCharges.push({
+          borrowId: doc.id,
+          ...borrow,
+          lateFees: borrow.lateFees || 0
+        });
+      }
+    });
+
+    return unpaidCharges;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des frais impayés:', error.message);
     throw new Error(error.message);
   }
 };
@@ -717,3 +960,71 @@ export const getAllPurchases = async () => {
     throw new Error(error.message);
   }
 };
+
+// ============= NOTIFICATIONS DE RETARD =============
+
+/**
+ * Créer une notification de retard pour un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @param {number} totalCharges - Total des frais en retard
+ * @param {number} overdueCount - Nombre de livres en retard
+ * @returns {Promise<string>} ID de la notification créée
+ */
+export const createOverdueNotification = async (userId, totalCharges, overdueCount) => {
+  try {
+    const message = `Vous avez ${overdueCount} livre${overdueCount > 1 ? 's' : ''} en retard. Frais à payer: $${totalCharges.toFixed(2)}`;
+    
+    const notificationRef = await addDoc(collection(db, 'notifications'), {
+      userId,
+      type: 'overdue',
+      message,
+      title: 'Livres en retard',
+      read: false,
+      createdAt: Timestamp.now(),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) // Expire dans 30 jours
+    });
+    
+    return notificationRef.id;
+  } catch (error) {
+    console.error('Erreur lors de la création de la notification de retard:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Vérifier et créer les notifications de retard pour un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @returns {Promise<void>}
+ */
+export const checkAndCreateOverdueNotifications = async (userId) => {
+  try {
+    // Récupérer les frais en retard
+    const charges = await checkUserOutstandingCharges(userId);
+    
+    if (charges.totalCharges > 0 && charges.overdueBooks.length > 0) {
+      // Vérifier si une notification récente existe déjà pour cet utilisateur
+      const q = query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId),
+        where('type', '==', 'overdue')
+      );
+      const snapshot = await getDocs(q);
+      
+      // Créer une notification seulement s'il n'en existe pas de récente (moins de 6 heures)
+      const now = new Date();
+      const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+      
+      const hasRecentNotification = snapshot.docs.some(doc => {
+        const createdAt = doc.data().createdAt?.toDate?.();
+        return createdAt && createdAt > sixHoursAgo;
+      });
+      
+      if (!hasRecentNotification) {
+        await createOverdueNotification(userId, charges.totalCharges, charges.overdueBooks.length);
+      }
+    }
+  } catch (error) {
+    console.error('Erreur lors de la vérification des notifications de retard:', error.message);
+  }
+};
+

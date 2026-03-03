@@ -427,12 +427,81 @@ app.delete('/api/borrows/:borrowId', async (req, res) => {
     }
 
     const { borrowId } = req.params;
-    await dbSvc.returnBorrow(borrowId);
+    const returnResult = await dbSvc.returnBorrow(borrowId);
     
-    res.json({ success: true, message: 'Livre retourné avec succès' });
+    res.json({ 
+      success: true, 
+      message: 'Livre retourné avec succès',
+      ...returnResult
+    });
   } catch (err) {
     console.error('Erreur lors du retour du livre:', err);
     res.status(400).json({ error: err.message || 'Erreur lors du retour du livre' });
+  }
+});
+
+// GET /api/overdue-charges/:userId - Obtenir les frais de retard en attente
+app.get('/api/overdue-charges/:userId', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { userId } = req.params;
+    const charges = await dbSvc.checkUserOutstandingCharges(userId);
+    res.json(charges);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des frais:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur' });
+  }
+});
+
+// POST /api/pay-overdue-charges - Payer les frais de retard
+app.post('/api/pay-overdue-charges', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { userId, borrowIds } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId est requis' });
+    }
+
+    const payment = await dbSvc.payOverdueCharges(userId, borrowIds || []);
+    res.json({ success: true, ...payment });
+  } catch (err) {
+    console.error('Erreur lors du paiement des frais:', err);
+    res.status(400).json({ error: err.message || 'Erreur lors du paiement des frais' });
+  }
+});
+
+// GET /api/unpaid-charges/:userId - Obtenir les frais impayés
+app.get('/api/unpaid-charges/:userId', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { userId } = req.params;
+    const charges = await dbSvc.getUnpaidOverdueCharges(userId);
+    res.json(charges);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des frais impayés:', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur' });
   }
 });
 

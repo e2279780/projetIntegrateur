@@ -98,17 +98,21 @@ export default function NotificationCenter({ userId }) {
                 {notifications.map(notif => (
                   <div
                     key={notif.id}
-                    className={`p-4 transition-all ${
-                      notif.read 
-                        ? 'bg-white hover:bg-gray-50' 
-                        : 'bg-blue-50 hover:bg-blue-100'
+                    className={`p-4 transition-all border-l-4 ${
+                      notif.type === 'overdue'
+                        ? 'bg-red-50 hover:bg-red-100 border-red-500'
+                        : notif.read 
+                        ? 'bg-white hover:bg-gray-50 border-gray-200'
+                        : 'bg-blue-50 hover:bg-blue-100 border-blue-500'
                     }`}
                   >
                     <div className="flex gap-3">
                       {/* Icône de type */}
                       <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                        notif.type === 'alert' 
+                        notif.type === 'overdue'
                           ? 'bg-red-100 text-red-600'
+                          : notif.type === 'alert' 
+                          ? 'bg-orange-100 text-orange-600'
                           : notif.type === 'success'
                           ? 'bg-green-100 text-green-600'
                           : 'bg-blue-100 text-blue-600'
@@ -118,10 +122,18 @@ export default function NotificationCenter({ userId }) {
 
                       {/* Contenu */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-slate-900 text-sm truncate">
+                        <p className={`font-black text-sm truncate ${
+                          notif.type === 'overdue'
+                            ? 'text-red-700'
+                            : 'text-slate-900'
+                        }`}>
                           {notif.title}
                         </p>
-                        <p className="text-slate-600 text-sm mt-1 line-clamp-2">
+                        <p className={`text-sm mt-1 line-clamp-2 ${
+                          notif.type === 'overdue'
+                            ? 'text-red-600 font-semibold'
+                            : 'text-slate-600'
+                        }`}>
                           {notif.message}
                         </p>
                         <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-widest font-bold">

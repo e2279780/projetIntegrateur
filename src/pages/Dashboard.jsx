@@ -9,7 +9,6 @@ import {
   faBook,
   faShoppingCart,
   faShoppingBag,
-  faCalendar,
   faDollarSign
 } from '@fortawesome/free-solid-svg-icons';
 import { getDaysRemaining } from '../utils/dateUtils';
@@ -21,6 +20,7 @@ export default function Dashboard({ user, role, refreshTrigger }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('borrows');
+  const [overdueCharges, setOverdueCharges] = useState(null);
 
   const userId = user?.uid;
 
@@ -56,6 +56,15 @@ export default function Dashboard({ user, role, refreshTrigger }) {
         } catch (purchaseErr) {
           console.error('Erreur lors de la récupération des achats:', purchaseErr);
           setPurchases([]);
+        }
+
+        // Récupérer les frais de retard
+        try {
+          const chargesData = await databaseService.checkUserOutstandingCharges(userId);
+          setOverdueCharges(chargesData);
+        } catch (chargesErr) {
+          console.error('Erreur lors de la récupération des frais:', chargesErr);
+          setOverdueCharges(null);
         }
       } catch (err) {
         console.error('Erreur Dashboard:', err);
@@ -206,7 +215,43 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                           <span className="font-black text-red-600">{overdueCount}</span>
                         </div>
                       )}
+                      {overdueCharges?.hasOutstandingCharges && (
+                        <Link 
+                          to="/frais" 
+                          className="flex items-center justify-between p-3 bg-red-50 rounded-lg group hover:bg-red-100 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <FontAwesomeIcon icon={faDollarSign} className="text-red-600 text-lg" />
+                            <span className="font-bold text-sm text-slate-700">Frais à régler</span>
+                          </div>
+                          <span className="font-black text-red-600">{overdueCharges.totalCharges.toFixed(2)}$</span>
+                        </Link>
+                      )}
                     </div>
+                  </div>
+                )}
+
+                {/* Alert Card - Frais de retard */}
+                {overdueCharges?.hasOutstandingCharges && (
+                  <div className="bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-2xl p-6 space-y-4 shadow-md">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center shrink-0">
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-black text-red-700 text-sm">Frais de retard à régler</h4>
+                        <p className="text-xs text-red-600 font-bold">Montant total: {overdueCharges.totalCharges.toFixed(2)}$</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-red-600 bg-red-100/50 p-3 rounded-lg">
+                      ⚠️ Vous ne pourrez pas emprunter de nouveaux livres tant que vos frais ne seront pas réglés.
+                    </p>
+                    <Link 
+                      to="/frais"
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-center transition-colors"
+                    >
+                      Régler les frais maintenant
+                    </Link>
                   </div>
                 )}
               </aside>

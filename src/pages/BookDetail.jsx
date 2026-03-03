@@ -16,11 +16,12 @@ export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [book, setBook] = useState(null);
-  const [similarBooks, setSimilarBooks] = useState([]); // État pour les livres de même catégorie
+  const [similarBooks, setSimilarBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [borrowSuccess, setBorrowSuccess] = useState(false);
+  const [hasOutstandingCharges, setHasOutstandingCharges] = useState(false);
 
   useEffect(() => {
     const loadBookData = async () => {
@@ -40,6 +41,16 @@ export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
               .slice(0, 5);
             setSimilarBooks(filtered);
           }
+
+          // 3. Vérifier les frais de retard si l'utilisateur est connecté
+          if (isLoggedIn && userId) {
+            try {
+              const chargesData = await databaseService.checkUserOutstandingCharges(userId);
+              setHasOutstandingCharges(chargesData.hasOutstandingCharges);
+            } catch (chargesErr) {
+              console.error('Erreur lors de la vérification des frais:', chargesErr);
+            }
+          }
         }
       } catch (err) {
         setError('Impossible de charger les données: ' + err.message);
@@ -49,10 +60,16 @@ export default function BookDetail({ isLoggedIn, userId, onBorrow }) {
     };
 
     loadBookData();
-  }, [bookId]);
+  }, [bookId, isLoggedIn, userId]);
 
   const handleBorrow = async () => {
     if (!userId || !bookId || !isLoggedIn) return;
+    
+    // Vérifier s'il y a des frais en attente
+    if (hasOutstandingCharges) {
+      setError('Vous avez des frais de retard à régler. Vous ne pouvez pas emprunter d\'autres livres tant que vous ne les aurez pas payés.');
+      return;
+    }
     
     setIsLoading(true);
     try {

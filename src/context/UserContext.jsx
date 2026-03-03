@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { authService } from '../services';
+import { authService, databaseService } from '../services';
 import { UserContext } from './userContextConfig';
 
 /**
@@ -28,6 +28,13 @@ export const UserProvider = ({ children }) => {
               ...profile,
             });
             setRole(profile.role);
+            
+            // Créer une notification de retard si nécessaire
+            try {
+              await databaseService.checkAndCreateOverdueNotifications(authUser.uid);
+            } catch (err) {
+              console.error('Erreur lors de la création de la notification de retard:', err);
+            }
           }
         } catch (error) {
           console.error('Erreur lors de la récupération du profil:', error);

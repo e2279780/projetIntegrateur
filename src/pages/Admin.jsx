@@ -15,11 +15,7 @@ import {
   faBarcode,
   faTag,
   faBuilding,
-  faCalendar,
-  faFileLines,
-  faGlobe,
   faStar,
-  faNoteSticky,
   faImage,
   faTimes,
   faDollarSign,
@@ -33,7 +29,6 @@ import { getDaysRemaining, formatDueDate } from '../utils/dateUtils';
 export default function Admin() {
   // --- ÉTATS ---
   const [inventory, setInventory] = useState([]);
-  const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('inventory');
   
@@ -89,7 +84,8 @@ export default function Admin() {
       (statusFilter === 'returned' && borrow.returnDate) ||
       (statusFilter === 'overdue' && !borrow.returnDate && borrow.status === 'overdue') ||
       (statusFilter === 'soon' && !borrow.returnDate && borrow.status === 'soon') ||
-      (statusFilter === 'active' && !borrow.returnDate && borrow.status === 'ok');
+      (statusFilter === 'active' && !borrow.returnDate && borrow.status === 'ok') ||
+      (statusFilter === 'unpaid-fees' && borrow.isOverdue && !borrow.feesSettled);
 
     return matchesSearch && matchesStatus;
   });
@@ -113,8 +109,6 @@ export default function Admin() {
       }));
 
       setInventory(mapped);
-      const provs = Array.from(new Set(mapped.map(m => m.provider))).filter(Boolean);
-      setProviders(provs);
     } catch (err) {
       console.error('Erreur fetch inventory', err);
     } finally {
@@ -146,6 +140,10 @@ export default function Admin() {
             bookTitle: book?.title || 'Livre inconnu',
             daysLeft,
             status,
+            // Ajouter les infos de frais de retard
+            isOverdue: borrow.isOverdue || false,
+            lateFees: borrow.lateFees || 0,
+            feesSettled: borrow.feesSettled || false,
           };
         } catch (err) {
           console.error('Erreur enrichissement emprunt:', err);
@@ -468,6 +466,7 @@ export default function Admin() {
                   <option value="active">En cours</option>
                   <option value="soon">À retourner bientôt</option>
                   <option value="overdue">En retard</option>
+                  <option value="unpaid-fees">Frais impayés</option>
                   <option value="returned">Retournés</option>
                 </select>
 
@@ -488,17 +487,18 @@ export default function Admin() {
                   <th className="px-8 py-6">Retour prévu</th>
                   <th className="px-8 py-6">État</th>
                   <th className="px-8 py-6">Jours</th>
+                  <th className="px-8 py-6">Frais</th>
                   <th className="px-8 py-6">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {borrowsLoading ? (
                   <tr>
-                    <td colSpan="7" className="px-8 py-6 text-center text-slate-400 font-bold">Chargement des emprunts...</td>
+                    <td colSpan="8" className="px-8 py-6 text-center text-slate-400 font-bold">Chargement des emprunts...</td>
                   </tr>
                 ) : filteredBorrows.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-8 py-12 text-center text-slate-400 font-bold uppercase italic tracking-widest">
+                    <td colSpan="8" className="px-8 py-12 text-center text-slate-400 font-bold uppercase italic tracking-widest">
                       Aucun emprunt trouvé
                     </td>
                   </tr>
@@ -550,6 +550,20 @@ export default function Admin() {
                         }`}>
                           {borrow.returnDate ? '-' : borrow.daysLeft > 0 ? `+${borrow.daysLeft}` : borrow.daysLeft}
                         </span>
+                      </td>
+                      <td className="px-8 py-6">
+                        {borrow.isOverdue && !borrow.feesSettled ? (
+                          <div className="flex items-center gap-2">
+                            <span className="bg-red-50 text-red-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1 w-fit">
+                              <FontAwesomeIcon icon={faDollarSign} /> ${borrow.lateFees.toFixed(2)}
+                            </span>
+                            {!borrow.feesSettled && (
+                              <span className="text-[8px] font-black text-red-600 uppercase">IMPAYÉ</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-bold text-sm">-</span>
+                        )}
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex gap-2">

@@ -103,7 +103,7 @@ export default function App() {
             <Route path="/" element={<Home isLoggedIn={isLoggedIn} userId={user?.uid} onBorrow={handleBorrowSuccess} />} />
             <Route path="/inventory" element={<Inventory isLoggedIn={isLoggedIn} userId={user?.uid} onBorrow={handleBorrowSuccess} />} />
             <Route path="/book/:bookId" element={<BookDetail isLoggedIn={isLoggedIn} userId={user?.uid} />} />
-            <Route path="/frais" element={<Frais />} />
+            <Route path="/frais" element={<Frais isLoggedIn={isLoggedIn} userId={user?.uid} />} />
             
             {/* Authentification : Redirection si déjà connecté */}
             <Route path="/login" element={!isLoggedIn ? <Login /> : <Navigate to={role === 'Bibliothécaire' ? "/admin" : "/dashboard"} />} />
