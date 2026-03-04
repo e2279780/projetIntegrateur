@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faTruckLoading, 
   faExclamationTriangle, 
   faPlusCircle, 
   faChartLine,
@@ -223,7 +222,7 @@ export default function Admin() {
         } else {
           parsed = await resp.text();
         }
-      } catch (parseErr) {
+      } catch {
         try { parsed = await resp.text(); } catch { parsed = null; }
       }
 
@@ -314,201 +313,241 @@ export default function Admin() {
   }, [activeTab]);
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-10">
-      
-      <div className="mb-12">
-        <h1 className="text-5xl font-black text-slate-900 italic uppercase tracking-tighter mb-2">Dashboard Admin</h1>
-        <p className="text-slate-400 font-bold text-sm uppercase tracking-[0.3em]">Gestion de l'inventaire, emprunts & achats</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-blue-100">
+      <div className="max-w-[1800px] mx-auto px-6 py-12">
+        
+        {/* HEADER MAGNIFIQUE */}
+        <div className="mb-16">
+          <div className="flex items-end justify-between gap-6 mb-8">
+            <div>
+              <h1 className="text-6xl font-black text-slate-900 mb-2 tracking-tighter leading-tight">
+                Dashboard <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-600 bg-clip-text text-transparent">Admin</span>
+              </h1>
+              <p className="text-slate-600 font-bold text-lg flex items-center gap-3">
+                <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+                Gestion complète de la bibliothèque
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-600 text-sm font-bold">📅 {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+          </div>
+        </div>
 
-      {/* ONGLETS */}
-      <div className="flex gap-2 mb-8 border-b-2 border-gray-200">
-        <button
-          onClick={() => setActiveTab('inventory')}
-          className={`px-6 py-4 font-black text-sm uppercase tracking-widest transition-all ${
-            activeTab === 'inventory' ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <FontAwesomeIcon icon={faChartLine} className="mr-2" />
-          Inventaire
-        </button>
-        <button
-          onClick={() => setActiveTab('borrows')}
-          className={`px-6 py-4 font-black text-sm uppercase tracking-widest transition-all ${
-            activeTab === 'borrows' ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <FontAwesomeIcon icon={faUsers} className="mr-2" />
-          Emprunts ({borrows.filter(b => !b.returnDate).length})
-        </button>
-        <button
-          onClick={() => setActiveTab('purchases')}
-          className={`px-6 py-4 font-black text-sm uppercase tracking-widest transition-all ${
-            activeTab === 'purchases' ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <FontAwesomeIcon icon={faShoppingCart} className="mr-2" />
-          Achats ({purchases.length})
-        </button>
-      </div>
+        {/* ONGLETS ÉLÉGANTS */}
+        <div className="flex gap-3 mb-12 flex-wrap">
+          {[
+            { id: 'inventory', label: 'Inventaire', icon: faChartLine, color: 'from-blue-600 to-blue-700' },
+            { id: 'borrows', label: `Emprunts (${borrows.filter(b => !b.returnDate).length})`, icon: faUsers, color: 'from-purple-600 to-purple-700' },
+            { id: 'purchases', label: `Achats (${purchases.length})`, icon: faShoppingCart, color: 'from-emerald-600 to-emerald-700' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative group px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center gap-3 ${
+                activeTab === tab.id 
+                  ? `bg-gradient-to-r ${tab.color} text-white shadow-lg` 
+                  : 'bg-gray-100 text-slate-700 hover:bg-gray-200 border border-gray-200'
+              }`}
+            >
+              <FontAwesomeIcon icon={tab.icon} className="text-lg" />
+              {tab.label}
+              {activeTab === tab.id && <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-50 animate-pulse"></div>}
+            </button>
+          ))}
+        </div>
 
       {/* CONTENU INVENTAIRE */}
       {activeTab === 'inventory' && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                <FontAwesomeIcon icon={faChartLine} />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* CARTES DE STATISTIQUES */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {/* Carte 1 : Total Livres */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400 rounded-[2rem] blur-2xl opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative bg-white border border-blue-200 rounded-[2rem] p-8 shadow-md overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 border border-blue-200">
+                    <FontAwesomeIcon icon={faBook} className="text-2xl" />
+                  </div>
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2">Total Livres</p>
+                  <p className="text-4xl font-black text-slate-900 mb-3">{inventory.length}</p>
+                  <p className="text-xs text-slate-500 font-bold">📊 +12% ce mois</p>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Livres</p>
-              <p className="text-3xl font-black text-slate-900 italic">{inventory.length}</p>
             </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
+            {/* Carte 2 : Alertes Stock Bas */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-400 rounded-[2rem] blur-2xl opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative bg-white border border-red-200 rounded-[2rem] p-8 shadow-md overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5 border border-red-200">
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="text-2xl" />
+                  </div>
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2">Alertes Stock</p>
+                  <p className="text-4xl font-black text-red-600 mb-3">{inventory.filter(item => item.stock <= item.minStock).length}</p>
+                  <p className="text-xs text-slate-500 font-bold">⚠️ Action requise</p>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alertes Stock Bas</p>
-              <p className="text-3xl font-black text-red-500 italic">
-                {inventory.filter(item => item.stock <= item.minStock).length}
-              </p>
             </div>
 
-            <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl">
-              <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 text-white">
-                <FontAwesomeIcon icon={faTruckLoading} />
+            {/* Carte 3 : Revenu Total */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-400 rounded-[2rem] blur-2xl opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative bg-white border border-emerald-200 rounded-[2rem] p-8 shadow-md overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 border border-emerald-200">
+                    <FontAwesomeIcon icon={faDollarSign} className="text-2xl" />
+                  </div>
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2">Revenu Total</p>
+                  <p className="text-4xl font-black text-emerald-600 mb-3">${purchases.reduce((sum, p) => sum + (p.bookPrice || 0), 0).toFixed(0)}</p>
+                  <p className="text-xs text-slate-500 font-bold">💰 Tous les achats</p>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Valorisation Totale</p>
-              <p className="text-3xl font-black italic text-white">
-                ${purchases.reduce((sum, p) => sum + (p.bookPrice || 0), 0).toFixed(2)}
-              </p>
             </div>
           </div>
 
-          <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center bg-gray-50/50 gap-4">
-              <h2 className="font-black text-xl uppercase italic">Inventaire des Stocks</h2>
-              
-              <div className="relative w-full md:max-w-md">
-                <input 
-                  type="text" 
-                  placeholder="Rechercher par titre ou auteur..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white border-2 border-gray-200 rounded-2xl px-5 py-3 pl-12 font-bold text-slate-700 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
-                />
-                <FontAwesomeIcon icon={faSearch} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button onClick={fetchInventory} className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-300 transition">Actualiser</button>
-                <button 
-                  onClick={() => setShowAddBookModal(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition"
-                >
-                  <FontAwesomeIcon icon={faPlusCircle} /> Ajouter un livre
-                </button>
-                <button 
-                  onClick={() => setShowFeeModal(true)}
-                  className="bg-yellow-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-yellow-700 transition"
-                >
-                  <FontAwesomeIcon icon={faDollarSign} /> Ajouter un frais
-                </button>
+          {/* TABLEAU INVENTAIRE */}
+          {/* TABLEAU INVENTAIRE */}
+          <div className="bg-white border border-gray-200 rounded-[2.5rem] shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-100 to-slate-50 px-8 py-8 border-b border-gray-300">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div>
+                  <h2 className="font-black text-2xl text-slate-900 mb-1">📚 Inventaire des Stocks</h2>
+                  <p className="text-sm text-slate-600 font-bold">Gestion du catalogue et disponibilités</p>
+                </div>
+                
+                <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                  <div className="relative flex-1 md:flex-none min-w-80">
+                    <FontAwesomeIcon icon={faSearch} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+                    <input 
+                      type="text" 
+                      placeholder="Rechercher par titre ou auteur..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-white border-2 border-gray-200 hover:border-gray-300 rounded-2xl px-5 pl-14 py-3.5 font-bold text-slate-800 placeholder-slate-400 focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <button 
+                    onClick={fetchInventory} 
+                    className="px-5 py-3.5 rounded-2xl font-black text-sm bg-gray-100 hover:bg-gray-200 text-slate-800 transition-all border border-gray-200 flex items-center gap-2"
+                  >
+                    🔄 Actualiser
+                  </button>
+                  <button 
+                    onClick={() => setShowAddBookModal(true)}
+                    className="px-6 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                  >
+                    <FontAwesomeIcon icon={faPlusCircle} /> Ajouter
+                  </button>
+                  <button 
+                    onClick={() => setShowFeeModal(true)}
+                    className="px-6 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                  >
+                    <FontAwesomeIcon icon={faDollarSign} /> Frais
+                  </button>
+                </div>
               </div>
             </div>
             
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    <th className="px-8 py-6">Livre</th>
-                    <th className="px-8 py-6">Format</th>
-                    <th className="px-8 py-6">Stock actuel</th>
-                    <th className="px-8 py-6">Seuil Min</th>
-                    <th className="px-8 py-6">Action</th>
+                  <tr className="text-[11px] font-black text-slate-600 uppercase tracking-widest bg-gray-50 border-b border-gray-200">
+                    <th className="px-8 py-5">Livre</th>
+                    <th className="px-8 py-5">Format</th>
+                    <th className="px-8 py-5">Stock</th>
+                    <th className="px-8 py-5">Seuil Min</th>
+                    <th className="px-8 py-5">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-200">
                   {loading ? (
                     <tr>
-                      <td colSpan="5" className="px-8 py-6 text-center">Chargement...</td>
+                      <td colSpan="5" className="px-8 py-12 text-center">
+                        <FontAwesomeIcon icon={faSpinner} className="animate-spin text-blue-600 text-2xl" />
+                        <p className="text-slate-600 font-bold mt-3">Chargement des données...</p>
+                      </td>
                     </tr>
                   ) : filteredInventory.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-8 py-12 text-center text-slate-400 font-bold uppercase italic tracking-widest">
-                        Aucun livre trouvé pour "{searchTerm}"
+                        aucun livre trouvé pour "{searchTerm}"
                       </td>
                     </tr>
                   ) : (
                     filteredInventory.map(item => (
-                      <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-8 py-6">
-                          <p className="font-black text-slate-800">{item.title}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase">{item.provider}</p>
+                      <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-200 border-b border-gray-200 last:border-0">
+                        <td className="px-8 py-5">
+                          <p className="font-black text-slate-900">{item.title}</p>
+                          <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest mt-1">{item.provider}</p>
                         </td>
-                        <td className="px-8 py-6">
-                          <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">{item.format}</span>
+                        <td className="px-8 py-5">
+                          <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest border border-blue-200">{item.format}</span>
                         </td>
-                        <td className="px-8 py-6">
-                          <span className={`font-black text-lg ${item.stock <= item.minStock ? 'text-red-500' : 'text-slate-800'}`}>{item.stock}</span>
+                        <td className="px-8 py-5">
+                          <span className={`font-black text-lg ${item.stock <= item.minStock ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {item.stock}
+                          </span>
                         </td>
-                        <td className="px-8 py-6 font-bold text-slate-400">{item.minStock}</td>
-                        <td className="px-8 py-6">
+                        <td className="px-8 py-5 font-bold text-slate-600">{item.minStock}</td>
+                        <td className="px-8 py-5">
                           <div className="flex flex-col sm:flex-row gap-2">
-                          <button
-                            onClick={async () => {
-                              const qtyStr = window.prompt('Quantité à ajouter (nombre positif)');
-                              if (!qtyStr) return;
-                              const qty = parseInt(qtyStr, 10);
-                              if (Number.isNaN(qty) || qty <= 0) return alert('Quantité invalide');
+                            <button
+                              onClick={async () => {
+                                const qtyStr = window.prompt('Quantité à ajouter (nombre positif)');
+                                if (!qtyStr) return;
+                                const qty = parseInt(qtyStr, 10);
+                                if (Number.isNaN(qty) || qty <= 0) return alert('Quantité invalide');
 
-                              try {
-                                const res = await fetch(`/api/books/${item.id}`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ delta: qty }),
-                                });
-                                const json = await res.json();
-                                if (!res.ok) throw new Error(json.error || 'Erreur');
-                                await fetchInventory();
-                                alert('Stock mis à jour');
-                              } catch (err) {
-                                console.error(err);
-                                alert('Erreur lors de la mise à jour du stock: ' + err.message);
-                              }
-                            }}
-                            className="text-blue-600 font-black text-[10px] uppercase tracking-widest hover:underline"
-                          >
-                            Réapprovisionner
-                          </button>
-                          <button
-                            onClick={async () => {
-                              const qtyStr = window.prompt('Quantité à retirer (nombre positif)');
-                              if (!qtyStr) return;
-                              const qty = parseInt(qtyStr, 10);
-                              if (Number.isNaN(qty) || qty <= 0) return alert('Quantité invalide');
-                              if (qty > item.stock) return alert('Impossible de retirer plus que le stock actuel');
+                                try {
+                                  const res = await fetch(`/api/books/${item.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ delta: qty }),
+                                  });
+                                  const json = await res.json();
+                                  if (!res.ok) throw new Error(json.error || 'Erreur');
+                                  await fetchInventory();
+                                  alert('✅ Stock mis à jour');
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('❌ Erreur: ' + err.message);
+                                }
+                              }}
+                              className="text-blue-600 font-black text-[11px] uppercase tracking-widest hover:text-blue-700 hover:bg-blue-100 px-3 py-2 rounded-lg transition-all"
+                            >
+                              ➕ Ajouter
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const qtyStr = window.prompt('Quantité à retirer (nombre positif)');
+                                if (!qtyStr) return;
+                                const qty = parseInt(qtyStr, 10);
+                                if (Number.isNaN(qty) || qty <= 0) return alert('Quantité invalide');
+                                if (qty > item.stock) return alert('Impossible de retirer plus que le stock actuel');
 
-                              try {
-                                const res = await fetch(`/api/books/${item.id}`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ delta: -qty }),
-                                });
-                                const json = await res.json();
-                                if (!res.ok) throw new Error(json.error || 'Erreur');
-                                await fetchInventory();
-                                alert('Stock mis à jour');
-                              } catch (err) {
-                                console.error(err);
-                                alert('Erreur lors de la mise à jour du stock: ' + err.message);
-                              }
-                            }}
-                            className="text-red-600 font-black text-[10px] uppercase tracking-widest hover:underline"
-                          >
-                            Retirer
-                          </button>
-                        </div>
+                                try {
+                                  const res = await fetch(`/api/books/${item.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ delta: -qty }),
+                                  });
+                                  const json = await res.json();
+                                  if (!res.ok) throw new Error(json.error || 'Erreur');
+                                  await fetchInventory();
+                                  alert('✅ Stock mis à jour');
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('❌ Erreur: ' + err.message);
+                                }
+                              }}
+                              className="text-red-700 font-black text-[11px] uppercase tracking-widest hover:text-red-800 hover:bg-red-200 px-3 py-2 rounded-lg transition-all border border-red-300"
+                            >
+                              ➖ Retirer
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -517,256 +556,289 @@ export default function Admin() {
               </table>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* CONTENU EMPRUNTS (AVEC FILTRE) */}
       {activeTab === 'borrows' && (
-        <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-gray-50 bg-gray-50/50">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-              <h2 className="font-black text-xl uppercase italic">Gestion des Emprunts</h2>
-              
-              <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                {/* Recherche Textuelle */}
-                <div className="relative flex-1 md:w-64">
-                  <input 
-                    type="text" 
-                    placeholder="Nom, email, livre..." 
-                    value={borrowSearch}
-                    onChange={(e) => setBorrowSearch(e.target.value)}
-                    className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-2 pl-10 font-bold text-sm focus:border-blue-500 outline-none transition-all"
-                  />
-                  <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white border border-gray-200 rounded-[2.5rem] shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-100 to-slate-50 px-8 py-8 border-b border-gray-300">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div>
+                  <h2 className="font-black text-2xl text-slate-900 mb-1">👥 Gestion des Emprunts</h2>
+                  <p className="text-sm text-slate-600 font-bold">Suivi des emprunts et retours de livres</p>
                 </div>
+                
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                  {/* Recherche Textuelle */}
+                  <div className="relative flex-1 md:w-64">
+                    <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                    <input 
+                      type="text" 
+                      placeholder="Nom, email, livre..." 
+                      value={borrowSearch}
+                      onChange={(e) => setBorrowSearch(e.target.value)}
+                      className="w-full bg-white border-2 border-gray-200 hover:border-gray-300 rounded-2xl px-4 pl-12 py-3 font-bold text-slate-800 placeholder-slate-400 focus:ring-4 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all"
+                    />
+                  </div>
 
-                {/* Sélecteur de Statut */}
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-white border-2 border-gray-200 rounded-xl px-4 py-2 font-black text-[10px] uppercase tracking-widest outline-none focus:border-blue-500 cursor-pointer"
-                >
-                  <option value="all">Tous les statuts</option>
-                  <option value="active">En cours</option>
-                  <option value="soon">À retourner bientôt</option>
-                  <option value="overdue">En retard</option>
-                  <option value="unpaid-fees">Frais impayés</option>
-                  <option value="returned">Retournés</option>
-                </select>
+                  {/* Sélecteur de Statut */}
+                  <select 
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="bg-white border-2 border-gray-200 hover:border-gray-300 rounded-2xl px-4 py-3 font-black text-[11px] uppercase tracking-widest text-slate-800 outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 cursor-pointer transition-all"
+                  >
+                    <option value="all">Tous les statuts</option>
+                    <option value="active">En cours</option>
+                    <option value="soon">À retourner bientôt</option>
+                    <option value="overdue">En retard</option>
+                    <option value="unpaid-fees">Frais impayés</option>
+                    <option value="returned">Retournés</option>
+                  </select>
 
-                <button onClick={fetchBorrows} className="bg-slate-200 text-slate-800 px-4 py-2 rounded-xl font-bold text-xs hover:bg-slate-300 transition">
-                  Actualiser
-                </button>
+                  <button 
+                    onClick={fetchBorrows} 
+                    className="px-5 py-3 rounded-2xl font-black text-sm bg-gray-100 hover:bg-gray-200 text-slate-800 transition-all border border-gray-200"
+                  >
+                    🔄
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-gray-50">
-                  <th className="px-8 py-6">Emprunteur</th>
-                  <th className="px-8 py-6">Livre</th>
-                  <th className="px-8 py-6">Date d'emprunt</th>
-                  <th className="px-8 py-6">Retour prévu</th>
-                  <th className="px-8 py-6">État</th>
-                  <th className="px-8 py-6">Jours</th>
-                  <th className="px-8 py-6">Frais</th>
-                  <th className="px-8 py-6">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {borrowsLoading ? (
-                  <tr>
-                    <td colSpan="8" className="px-8 py-6 text-center text-slate-400 font-bold">Chargement des emprunts...</td>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[11px] font-black text-slate-600 uppercase tracking-widest bg-gray-50 border-b border-gray-200">
+                    <th className="px-8 py-5">Emprunteur</th>
+                    <th className="px-8 py-5">Livre</th>
+                    <th className="px-8 py-5">Date d'emprunt</th>
+                    <th className="px-8 py-5">Retour prévu</th>
+                    <th className="px-8 py-5">État</th>
+                    <th className="px-8 py-5">Jours</th>
+                    <th className="px-8 py-5">Frais</th>
+                    <th className="px-8 py-5">Actions</th>
                   </tr>
-                ) : filteredBorrows.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="px-8 py-12 text-center text-slate-400 font-bold uppercase italic tracking-widest">
-                      Aucun emprunt trouvé
-                    </td>
-                  </tr>
-                ) : (
-                  filteredBorrows.map(borrow => (
-                    <tr key={borrow.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-8 py-6">
-                        <p className="font-black text-slate-800">{borrow.userName}</p>
-                        <p className="text-[10px] font-bold text-slate-400">{borrow.userEmail}</p>
-                      </td>
-                      <td className="px-8 py-6">
-                        <p className="font-black text-slate-800">{borrow.bookTitle}</p>
-                      </td>
-                      <td className="px-8 py-6">
-                        <p className="text-slate-700 font-bold text-sm">
-                          {borrow.borrowDate?.toDate?.()?.toLocaleDateString?.('fr-FR') || new Date(borrow.borrowDate).toLocaleDateString('fr-FR')}
-                        </p>
-                      </td>
-                      <td className="px-8 py-6">
-                        <p className="text-slate-700 font-bold text-sm">
-                          {formatDueDate(borrow.returnDueDate)}
-                        </p>
-                      </td>
-                      <td className="px-8 py-6">
-                        {borrow.returnDate ? (
-                          <span className="bg-green-50 text-green-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit">
-                            <FontAwesomeIcon icon={faCheck} /> Retourné
-                          </span>
-                        ) : borrow.status === 'overdue' ? (
-                          <span className="bg-red-50 text-red-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit">
-                            <FontAwesomeIcon icon={faTimesCircle} /> En retard
-                          </span>
-                        ) : borrow.status === 'soon' ? (
-                          <span className="bg-orange-50 text-orange-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit">
-                            <FontAwesomeIcon icon={faClock} /> À retourner
-                          </span>
-                        ) : (
-                          <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 w-fit">
-                            <FontAwesomeIcon icon={faCheck} /> En cours
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className={`font-black text-lg ${
-                          borrow.returnDate ? 'text-slate-400' :
-                          borrow.daysLeft < 0 ? 'text-red-600' :
-                          borrow.daysLeft <= 3 ? 'text-orange-600' :
-                          'text-green-600'
-                        }`}>
-                          {borrow.returnDate ? '-' : borrow.daysLeft > 0 ? `+${borrow.daysLeft}` : borrow.daysLeft}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6">
-                        {borrow.isOverdue && !borrow.feesSettled ? (
-                          <div className="flex items-center gap-2">
-                            <span className="bg-red-50 text-red-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1 w-fit">
-                              <FontAwesomeIcon icon={faDollarSign} /> ${borrow.lateFees.toFixed(2)}
-                            </span>
-                            {!borrow.feesSettled && (
-                              <span className="text-[8px] font-black text-red-600 uppercase">IMPAYÉ</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 font-bold text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex gap-2">
-                          {!borrow.returnDate && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setAlertModal({
-                                    isOpen: true,
-                                    borrowId: borrow.id,
-                                    userId: borrow.userId,
-                                    userName: borrow.userName,
-                                    bookTitle: borrow.bookTitle,
-                                    email: borrow.userEmail,
-                                  });
-                                  setAlertMessage('');
-                                }}
-                                className="bg-blue-600 text-white px-3 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition flex items-center gap-1"
-                              >
-                                <FontAwesomeIcon icon={faBell} /> Alerte
-                              </button>
-                              <button
-                                onClick={() => alert('Fonction retour à implémenter')}
-                                className="bg-green-600 text-white px-3 py-2 rounded-lg font-bold text-xs hover:bg-green-700 transition"
-                              >
-                                Retour
-                              </button>
-                            </>
-                          )}
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {borrowsLoading ? (
+                    <tr>
+                      <td colSpan="8" className="px-8 py-12 text-center">
+                        <FontAwesomeIcon icon={faSpinner} className="animate-spin text-purple-600 text-2xl" />
+                        <p className="text-slate-600 font-bold mt-3">Chargement des emprunts...</p>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : filteredBorrows.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="px-8 py-12 text-center text-slate-600 font-bold uppercase italic tracking-widest">
+                        Aucun emprunt trouvé
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBorrows.map(borrow => (
+                      <tr key={borrow.id} className="hover:bg-gray-50 transition-colors duration-200 border-b border-gray-200 last:border-0">
+                        <td className="px-8 py-5">
+                          <p className="font-black text-slate-900">{borrow.userName}</p>
+                          <p className="text-[11px] font-bold text-slate-600">{borrow.userEmail}</p>
+                        </td>
+                        <td className="px-8 py-5">
+                          <p className="font-black text-slate-900">{borrow.bookTitle}</p>
+                        </td>
+                        <td className="px-8 py-5">
+                          <p className="text-slate-700 font-bold text-sm">
+                            {borrow.borrowDate?.toDate?.()?.toLocaleDateString?.('fr-FR') || new Date(borrow.borrowDate).toLocaleDateString('fr-FR')}
+                          </p>
+                        </td>
+                        <td className="px-8 py-5">
+                          <p className="text-slate-700 font-bold text-sm">
+                            {formatDueDate(borrow.returnDueDate)}
+                          </p>
+                        </td>
+                        <td className="px-8 py-5">
+                          {borrow.returnDate ? (
+                            <span className="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border border-emerald-200">
+                              <FontAwesomeIcon icon={faCheck} /> Retourné
+                            </span>
+                          ) : borrow.status === 'overdue' ? (
+                            <span className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border border-red-200">
+                              <FontAwesomeIcon icon={faTimesCircle} /> En retard
+                            </span>
+                          ) : borrow.status === 'soon' ? (
+                            <span className="bg-amber-100 text-amber-700 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border border-amber-200">
+                              <FontAwesomeIcon icon={faClock} /> À retourner
+                            </span>
+                          ) : (
+                            <span className="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-2 w-fit border border-blue-200">
+                              <FontAwesomeIcon icon={faCheck} /> En cours
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-8 py-5">
+                          <span className={`font-black text-lg ${
+                            borrow.returnDate ? 'text-slate-600' :
+                            borrow.daysLeft < 0 ? 'text-red-600' :
+                            borrow.daysLeft <= 3 ? 'text-amber-400' :
+                            'text-emerald-400'
+                          }`}>
+                            {borrow.returnDate ? '-' : borrow.daysLeft > 0 ? `+${borrow.daysLeft}j` : `${borrow.daysLeft}j`}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5">
+                          {borrow.isOverdue && !borrow.feesSettled ? (
+                            <div className="flex items-center gap-2">
+                              <span className="bg-red-500/20 text-red-300 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest flex items-center gap-1 w-fit border border-red-500/30">
+                                <FontAwesomeIcon icon={faDollarSign} /> ${borrow.lateFees.toFixed(2)}
+                              </span>
+                              {!borrow.feesSettled && (
+                                <span className="text-[9px] font-black text-red-400 uppercase bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/30">IMPAYÉ</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-500 font-bold text-sm">-</span>
+                          )}
+                        </td>
+                        <td className="px-8 py-5">
+                          <div className="flex gap-2">
+                            {!borrow.returnDate && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setAlertModal({
+                                      isOpen: true,
+                                      borrowId: borrow.id,
+                                      userId: borrow.userId,
+                                      userName: borrow.userName,
+                                      bookTitle: borrow.bookTitle,
+                                      email: borrow.userEmail,
+                                    });
+                                    setAlertMessage('');
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest transition border border-blue-700 flex items-center gap-1 shadow-md"
+                                >
+                                  <FontAwesomeIcon icon={faBell} /> Alerte
+                                </button>
+                                <button
+                                  onClick={() => alert('Fonction retour à implémenter')}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-bold text-[11px] uppercase tracking-widest transition border border-emerald-700 shadow-md"
+                                >
+                                  ✅ Retour
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
       {/* CONTENU ACHATS */}
       {activeTab === 'purchases' && (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4">
-                <FontAwesomeIcon icon={faShoppingCart} />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+          {/* CARTES DE STATISTIQUES DES ACHATS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Carte 1 : Total Achats */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-400 rounded-[2rem] blur-2xl opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative bg-white border border-purple-200 rounded-[2rem] p-8 shadow-md overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-5 border border-purple-200">
+                    <FontAwesomeIcon icon={faShoppingCart} className="text-2xl" />
+                  </div>
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2">Total Achats</p>
+                  <p className="text-4xl font-black text-slate-900 mb-3">{purchases.length}</p>
+                  <p className="text-xs text-slate-500 font-bold">🛍️ Transactions</p>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Achats</p>
-              <p className="text-3xl font-black text-slate-900 italic">{purchases.length}</p>
             </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
-                <FontAwesomeIcon icon={faDollarSign} />
+            {/* Carte 2 : Revenu Total */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-400 rounded-[2rem] blur-2xl opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative bg-white border border-emerald-200 rounded-[2rem] p-8 shadow-md overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 border border-emerald-200">
+                    <FontAwesomeIcon icon={faDollarSign} className="text-2xl" />
+                  </div>
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2">Revenu Total</p>
+                  <p className="text-4xl font-black text-slate-900 mb-3">${purchases.reduce((sum, p) => sum + (p.bookPrice || 0), 0).toFixed(0)}</p>
+                  <p className="text-xs text-slate-500 font-bold">💰 Jusqu'à maintenant</p>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Revenu Total</p>
-              <p className="text-3xl font-black text-slate-900 italic">
-                ${purchases.reduce((sum, p) => sum + (p.bookPrice || 0), 0).toFixed(2)}
-              </p>
             </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                <FontAwesomeIcon icon={faCheck} />
+            {/* Carte 3 : Complétés */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-400 rounded-[2rem] blur-2xl opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative bg-white border border-cyan-200 rounded-[2rem] p-8 shadow-md overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-gradient-to-br from-cyan-100 to-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center mb-5 border border-cyan-200">
+                    <FontAwesomeIcon icon={faCheck} className="text-2xl" />
+                  </div>
+                  <p className="text-[11px] font-black text-slate-600 uppercase tracking-widest mb-2">Complétés</p>
+                  <p className="text-4xl font-black text-slate-900 mb-3">{purchases.filter(p => p.status === 'completed').length}</p>
+                  <p className="text-xs text-slate-500 font-bold">✅ Transactions finalisées</p>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complétés</p>
-              <p className="text-3xl font-black text-slate-900 italic">
-                {purchases.filter(p => p.status === 'completed').length}
-              </p>
             </div>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b-2 border-gray-100">
-              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+          {/* TABLEAU ACHATS */}
+          <div className="bg-white border border-gray-200 rounded-[2.5rem] shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-100 to-slate-50 px-8 py-8 border-b border-gray-300">
+              <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3 mb-1">
                 <FontAwesomeIcon icon={faShoppingCart} className="text-purple-600" />
                 Tous les achats
               </h3>
+              <p className="text-sm text-slate-400 font-bold">Historique complet des transactions</p>
             </div>
 
             {purchasesLoading ? (
-              <div className="p-8 text-center">
-                <FontAwesomeIcon icon={faSpinner} className="text-4xl text-blue-600 animate-spin mb-4" />
+              <div className="p-12 text-center">
+                <FontAwesomeIcon icon={faSpinner} className="text-4xl text-purple-600 animate-spin mb-4" />
                 <p className="text-slate-600 font-bold">Chargement des achats...</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 border-b-2 border-gray-100">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Utilisateur</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Livre</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Auteur</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-black text-slate-600 uppercase tracking-wider">Prix</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-600 uppercase tracking-wider">Statut</th>
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+                      <th className="px-8 py-5 text-left">Utilisateur</th>
+                      <th className="px-8 py-5 text-left">Livre</th>
+                      <th className="px-8 py-5 text-left">Auteur</th>
+                      <th className="px-8 py-5 text-right">Prix</th>
+                      <th className="px-8 py-5 text-left">Date</th>
+                      <th className="px-8 py-5 text-left">Statut</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-200">
                     {purchases.map((purchase) => (
-                      <tr key={purchase.id} className="hover:bg-slate-50 transition">
-                        <td className="px-6 py-4">
+                      <tr key={purchase.id} className="hover:bg-gray-50 transition-colors duration-200 border-b border-gray-200 last:border-0">
+                        <td className="px-8 py-5">
                           <div>
                             <p className="font-bold text-slate-900">{purchase.userName}</p>
-                            <p className="text-xs text-slate-400">{purchase.userEmail}</p>
+                            <p className="text-xs text-slate-600">{purchase.userEmail}</p>
                           </div>
                         </td>
-                        <td className="px-6 py-4 font-bold text-slate-900">{purchase.bookTitle}</td>
-                        <td className="px-6 py-4 text-slate-600">{purchase.bookAuthor}</td>
-                        <td className="px-6 py-4 text-right font-bold text-purple-600">${(purchase.bookPrice || 0).toFixed(2)}</td>
-                        <td className="px-6 py-4 text-slate-600">
+                        <td className="px-8 py-5 font-bold text-slate-900">{purchase.bookTitle}</td>
+                        <td className="px-8 py-5 text-slate-700">{purchase.bookAuthor}</td>
+                        <td className="px-8 py-5 text-right font-bold text-purple-600">${(purchase.bookPrice || 0).toFixed(2)}</td>
+                        <td className="px-8 py-5 text-slate-700">
                           {purchase.purchaseDate?.toDate?.().toLocaleDateString('fr-FR') || 'N/A'}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            purchase.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        <td className="px-8 py-5">
+                          <span className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest border ${
+                            purchase.status === 'completed' 
+                              ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+                              : 'bg-amber-100 text-amber-700 border-amber-200'
                           }`}>
-                            {purchase.status === 'completed' ? 'Complété' : 'En attente'}
+                            {purchase.status === 'completed' ? '✅ Complété' : '⏳ En attente'}
                           </span>
                         </td>
                       </tr>
@@ -919,6 +991,21 @@ export default function Admin() {
                     <FontAwesomeIcon icon={faImage} /> Couverture
                   </h4>
                   <input type="text" value={addBookData.coverImageUrl} onChange={(e) => setAddBookData({...addBookData, coverImageUrl: e.target.value})} className="w-full bg-white border-2 border-green-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition" placeholder="URL de l'image" />
+                  
+                  {addBookData.coverImageUrl && (
+                    <div className="mt-4 flex justify-center">
+                      <div className="bg-white border-2 border-green-300 rounded-lg p-3 max-w-xs">
+                        <img 
+                          src={addBookData.coverImageUrl} 
+                          alt="Aperçu de la couverture" 
+                          className="w-full h-auto rounded-lg object-cover max-h-64"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150"%3E%3Crect fill="%23e2e8f0" width="100" height="150"/%3E%3Ctext x="50" y="75" font-size="14" fill="%23888" text-anchor="middle" dy=".3em"%3EImage non disponible%3C/text%3E%3C/svg%3E';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </form>
             </div>
@@ -1008,6 +1095,7 @@ export default function Admin() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

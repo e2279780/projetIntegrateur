@@ -12,7 +12,7 @@ export default function Signup({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const [role, setRole] = useState('Membre');
+  const [role] = useState('Membre');
 
   const validate = (values) => {
     const errors = {};
@@ -202,36 +202,6 @@ export default function Signup({ onLogin }) {
                     disabled={loading}
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Sélection du rôle */}
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-700 uppercase tracking-wider ml-1 block">Vous êtes</label>
-              <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                <label className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-white has-[:checked]:shadow-sm has-[:checked]:text-blue-600">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="Membre"
-                    checked={role === 'Membre'}
-                    onChange={() => setRole('Membre')}
-                    className="hidden"
-                  />
-                  <span className="text-sm font-bold">Lecteur</span>
-                </label>
-
-                <label className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer transition-all has-[:checked]:bg-white has-[:checked]:shadow-sm has-[:checked]:text-blue-600">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="Bibliothécaire"
-                    checked={role === 'Bibliothécaire'}
-                    onChange={() => setRole('Bibliothécaire')}
-                    className="hidden"
-                  />
-                  <span className="text-sm font-bold">Libraire</span>
-                </label>
               </div>
             </div>
 

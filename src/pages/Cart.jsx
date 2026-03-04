@@ -141,7 +141,7 @@ export default function Cart({ isLoggedIn, userId }) {
               <p className="text-slate-700 mb-2">📍 Adresse de retrait :</p>
               <p className="text-slate-500">3800 Sherbrooke St E, Montreal, Quebec H1X 2A2</p>
               {checkoutInfo?.shippingFee ? (
-                <p className="text-slate-600 text-sm mt-2">Frais de retrait : ${checkoutInfo.shippingFee.toFixed(2)}</p>
+                <p className="text-slate-600 text-sm mt-2">Frais de retrait: ${checkoutInfo.shippingFee.toFixed(2)}</p>
               ) : null}
             </>
           ) : (
@@ -149,11 +149,11 @@ export default function Cart({ isLoggedIn, userId }) {
               {!delivered ? (
                 <p className="text-slate-700 mb-2">🚚 Livraison prévue dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</p>
               ) : (
-                <p className="text-green-600 font-bold mb-2">✅ Votre commande est livrée !</p>
+                <p className="text-green-600 font-bold mb-2">✓ Votre commande est livree!</p>
               )}
               <p className="text-slate-500">Nous vous tiendrons informé.</p>
               {checkoutInfo?.shippingFee ? (
-                <p className="text-slate-600 text-sm mt-2">Frais de livraison : ${checkoutInfo.shippingFee.toFixed(2)}</p>
+                <p className="text-slate-600 text-sm mt-2">Frais de livraison: ${checkoutInfo.shippingFee.toFixed(2)}</p>
               ) : null}
             </>
           )}
@@ -276,7 +276,7 @@ export default function Cart({ isLoggedIn, userId }) {
                     onChange={() => setShippingMethod('pickup')}
                     className="form-radio"
                   />
-                  Retrait (3800 Sherbrooke St E, Montréal)
+                  Retrait (3800 Sherbrooke St E, Montreal)
                 </label>
                 <label className="inline-flex items-center gap-2">
                   <input

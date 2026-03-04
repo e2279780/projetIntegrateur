@@ -212,7 +212,7 @@ export default function Profile({ user, role }) {
                   <input 
                     name="name"
                     type="text" 
-                    defaultValue={user?.name} 
+                    defaultValue={displayName} 
                     className="w-full px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700" 
                     required
                   />

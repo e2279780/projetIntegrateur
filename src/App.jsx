@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services'; 
 import { useUser } from './context/useUser';
 import { CartProvider } from './context/CartContext';
+import { useCart } from './context/useCart';
 
 // Pages
 import Home from './pages/Home';
@@ -25,10 +26,12 @@ import BookDetail from './pages/BookDetail';
 import InitBooks from './pages/InitBooks';
 import Cart from './pages/Cart'; 
 
-export default function App() {
-  // Utilisation exclusive du contexte pour la source de vérité
+// Wrapper interne pour accéder au contexte CartContext
+function AppContent() {
   const { user, loading: authLoading, role } = useUser();
+  const { getTotalItems } = useCart();
   const isLoggedIn = !!user;
+  const cartCount = getTotalItems && isLoggedIn ? getTotalItems() : 0;
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutToast, setShowLogoutToast] = useState(false);
@@ -72,30 +75,30 @@ export default function App() {
   }
 
   return (
-    <CartProvider>
-      <Router>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex flex-col font-sans relative">
-        
-        {/* Toast de confirmation de déconnexion */}
-        {showLogoutToast && (
-          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="bg-slate-900/95 backdrop-blur-md text-white px-8 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border border-slate-700/50">
-              <div className="bg-emerald-500 w-10 h-10 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                <FontAwesomeIcon icon={faCheckCircle} className="text-white" />
-              </div>
-              <div>
-                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-emerald-400">Succès</p>
-                <p className="font-bold text-sm tracking-tight">Vous avez été déconnecté.</p>
-              </div>
+    <Router>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex flex-col font-sans relative">
+      
+      {/* Toast de confirmation de déconnexion */}
+      {showLogoutToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-slate-900/95 backdrop-blur-md text-white px-8 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border border-slate-700/50">
+            <div className="bg-emerald-500 w-10 h-10 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <FontAwesomeIcon icon={faCheckCircle} className="text-white" />
+            </div>
+            <div>
+              <p className="font-black text-[10px] uppercase tracking-[0.3em] text-emerald-400">Succès</p>
+              <p className="font-bold text-sm tracking-tight">Vous avez été déconnecté.</p>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        <Navbar 
-          isLoggedIn={isLoggedIn} 
-          user={user} 
-          onLogout={handleLogout} 
-        />
+      <Navbar 
+        isLoggedIn={isLoggedIn} 
+        cartCount={cartCount}
+        user={user} 
+        onLogout={handleLogout} 
+      />
 
         <main className="flex-1 flex flex-col">
           <Routes>
@@ -151,6 +154,13 @@ export default function App() {
         </footer>
       </div>
     </Router>
+  );
+}
+
+export default function App() {
+  return (
+    <CartProvider>
+      <AppContent />
     </CartProvider>
   );
 }

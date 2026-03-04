@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CartContext } from './CartContextdef';
+import { useUser } from './useUser';
 
-const getInitialCartItems = () => {
+const getInitialCartItems = (userId) => {
+  if (!userId) return [];
   try {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = localStorage.getItem(`cart_${userId}`);
     return savedCart ? JSON.parse(savedCart) : [];
   } catch (error) {
     console.error('Erreur lors du chargement du panier:', error);
@@ -12,12 +14,28 @@ const getInitialCartItems = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState(getInitialCartItems());
+  const { user } = useUser();
+  const userId = user?.uid;
+  const prevUserIdRef = useRef(userId);
+  const [cartItems, setCartItems] = useState([]);
+
+  // Charger le panier quand l'utilisateur change
+  useEffect(() => {
+    if (userId !== prevUserIdRef.current) {
+      prevUserIdRef.current = userId;
+      // Defer setState to next microtask to avoid synchronous update
+      Promise.resolve().then(() => {
+        setCartItems(getInitialCartItems(userId || null));
+      });
+    }
+  }, [userId]);
 
   // Sauvegarder le panier dans localStorage à chaque modification
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (userId && cartItems.length > 0) {
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(cartItems));
+    }
+  }, [cartItems, userId]);
 
   const addToCart = (book) => {
     setCartItems(prevItems => {
