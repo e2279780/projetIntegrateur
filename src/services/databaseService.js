@@ -299,7 +299,8 @@ export const checkUserOutstandingCharges = async (userId) => {
         if (userDoc.exists()) {
           userEmail = userDoc.data().email || null;
         }
-      } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_) {
         // ignore
       }
 

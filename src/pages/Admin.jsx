@@ -547,6 +547,28 @@ export default function Admin() {
                             >
                               ➖ Retirer
                             </button>
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${item.title}" ? Cette action est irréversible.`)) return;
+                                
+                                try {
+                                  const res = await fetch(`/api/books/${item.id}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                  });
+                                  const json = await res.json();
+                                  if (!res.ok) throw new Error(json.error || 'Erreur');
+                                  await fetchInventory();
+                                  alert('✅ Livre supprimé avec succès');
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('❌ Erreur: ' + err.message);
+                                }
+                              }}
+                              className="text-white font-black text-[11px] uppercase tracking-widest hover:text-white hover:bg-red-600 px-3 py-2 rounded-lg transition-all border border-red-500 bg-red-500"
+                            >
+                              🗑️ Supprimer
+                            </button>
                           </div>
                         </td>
                       </tr>
