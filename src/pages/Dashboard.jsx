@@ -231,7 +231,7 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                   </div>
                 )}
 
-                {/* Alert Card - Frais de retard */}
+                {/* Alert Card - frais à régler (retard ou administratifs) */}
                 {overdueCharges?.hasOutstandingCharges && (
                   <div className="bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-2xl p-6 space-y-4 shadow-md">
                     <div className="flex items-center gap-3">
@@ -239,7 +239,7 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                         <FontAwesomeIcon icon={faExclamationTriangle} />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-black text-red-700 text-sm">Frais de retard à régler</h4>
+                        <h4 className="font-black text-red-700 text-sm">Frais à régler</h4>
                         <p className="text-xs text-red-600 font-bold">Montant total: {overdueCharges.totalCharges.toFixed(2)}$</p>
                       </div>
                     </div>
@@ -484,13 +484,36 @@ export default function Dashboard({ user, role, refreshTrigger }) {
                             
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                               {/* Info Card */}
-                              <div className="flex-1 p-4 rounded-2xl flex items-center gap-3 bg-purple-500/10 border border-purple-300/30">
-                                <div className="flex-1 space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <FontAwesomeIcon icon={faDollarSign} className="text-purple-600 text-sm" />
-                                    <p className="font-black text-slate-900">${purchase.bookPrice}</p>
-                                  </div>
+                              <div className="flex-1 p-4 rounded-2xl flex flex-col gap-3 bg-purple-500/10 border border-purple-300/30">
+                                <div className="flex items-center gap-2">
+                                  <FontAwesomeIcon icon={faDollarSign} className="text-purple-600 text-sm" />
+                                  <p className="font-black text-slate-900">${purchase.bookPrice}</p>
                                 </div>
+                                {/* shipping detail */}
+                                {purchase.shippingMethod === 'pickup' ? (
+                                  <>
+                                    <p className="text-sm text-slate-700">Retrait : 3800 Sherbrooke St E</p>
+                                    {purchase.shippingFee ? (
+                                      <p className="text-xs text-slate-600">Frais : ${purchase.shippingFee}</p>
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  (() => {
+                                    const days = getDaysRemaining(purchase.deliveryDate);
+                                    return (
+                                      <>
+                                        {days > 0 ? (
+                                          <p className="text-sm text-slate-700">Livraison dans {days} jour{days > 1 ? 's' : ''}</p>
+                                        ) : (
+                                          <p className="text-sm text-green-600 font-bold">✅ Livré</p>
+                                        )}
+                                        {purchase.shippingFee ? (
+                                          <p className="text-xs text-slate-600">Frais : ${purchase.shippingFee}</p>
+                                        ) : null}
+                                      </>
+                                    );
+                                  })()
+                                )}
                                 <span className="px-3 py-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white font-black text-xs rounded-full">
                                   Acheté
                                 </span>

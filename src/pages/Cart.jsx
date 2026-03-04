@@ -23,6 +23,18 @@ export default function Cart({ isLoggedIn, userId }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  // user choice for pickup or delivery
+  const [shippingMethod, setShippingMethod] = useState('pickup');
+  const [checkoutInfo, setCheckoutInfo] = useState(null); // store method/date for display
+
+  // derived values for display
+  const PER_DAY_FEE = 2;
+  const estimatedDeliveryDate = new Date();
+  estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + 3);
+  const daysUntilDelivery = Math.ceil((estimatedDeliveryDate - new Date()) / (1000 * 60 * 60 * 24));
+  const shippingFee = shippingMethod === 'delivery' ? daysUntilDelivery * PER_DAY_FEE : 0;
+
+
   // Charger les informations de carte
   React.useEffect(() => {
     const loadCardInfo = async () => {
@@ -44,6 +56,8 @@ export default function Cart({ isLoggedIn, userId }) {
 
     loadCardInfo();
   }, [isLoggedIn, userId]);
+
+  const outOfStockInCart = cartItems.some(item => item.availableCopies !== undefined && item.availableCopies <= 0);
 
   const handleCheckout = async () => {
     setError('');
@@ -67,10 +81,33 @@ export default function Cart({ isLoggedIn, userId }) {
         return;
       }
 
-      // Acheter tous les livres du panier
+      // before proceeding double-check availability on server (in case stock changed)
       for (const item of cartItems) {
-        await databaseService.purchaseBook(userId, item.id);
+        try {
+          const book = await databaseService.getBookById(item.id);
+          if (book.availableCopies !== undefined && book.availableCopies <= 0) {
+            throw new Error(`"${book.title}" est en rupture de stock`);
+          }
+        } catch (err) {
+          setError(err.message || 'Un livre du panier est indisponible');
+          setIsProcessing(false);
+          return;
+        }
       }
+
+      // calculate delivery date if needed (3 days from now)
+      let deliveryDate = null;
+      if (shippingMethod === 'delivery') {
+        deliveryDate = new Date();
+        deliveryDate.setDate(deliveryDate.getDate() + 3);
+      }
+
+      for (const item of cartItems) {
+        await databaseService.purchaseBook(userId, item.id, shippingMethod, deliveryDate, shippingFee);
+      }
+
+      // store info to show in success screen
+      setCheckoutInfo({ shippingMethod, deliveryDate, shippingFee });
 
       // Vider le panier
       clearCart();
@@ -87,6 +124,10 @@ export default function Cart({ isLoggedIn, userId }) {
   };
 
   if (success) {
+    const { shippingMethod, deliveryDate } = checkoutInfo || {};
+    const daysRemaining = deliveryDate ? Math.ceil((new Date(deliveryDate) - new Date())/(1000*60*60*24)) : 0;
+    const delivered = deliveryDate && daysRemaining <= 0;
+
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
@@ -94,8 +135,29 @@ export default function Cart({ isLoggedIn, userId }) {
             <FontAwesomeIcon icon={faCheckCircle} className="text-4xl text-emerald-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-3">Commande finalisée!</h2>
-          <p className="text-slate-600 font-bold mb-6">Vos livres ont été ajoutés à votre bibliothèque</p>
-          <p className="text-slate-500">Vous serez redirigé au tableau de bord...</p>
+          <p className="text-slate-600 font-bold mb-4">Vos livres ont été ajoutés à votre bibliothèque</p>
+          {shippingMethod === 'pickup' ? (
+            <>
+              <p className="text-slate-700 mb-2">📍 Adresse de retrait :</p>
+              <p className="text-slate-500">3800 Sherbrooke St E, Montreal, Quebec H1X 2A2</p>
+              {checkoutInfo?.shippingFee ? (
+                <p className="text-slate-600 text-sm mt-2">Frais de retrait : ${checkoutInfo.shippingFee.toFixed(2)}</p>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {!delivered ? (
+                <p className="text-slate-700 mb-2">🚚 Livraison prévue dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</p>
+              ) : (
+                <p className="text-green-600 font-bold mb-2">✅ Votre commande est livrée !</p>
+              )}
+              <p className="text-slate-500">Nous vous tiendrons informé.</p>
+              {checkoutInfo?.shippingFee ? (
+                <p className="text-slate-600 text-sm mt-2">Frais de livraison : ${checkoutInfo.shippingFee.toFixed(2)}</p>
+              ) : null}
+            </>
+          )}
+          <p className="text-slate-500 mt-4">Vous serez redirigé au tableau de bord...</p>
         </div>
       </div>
     );
@@ -201,26 +263,59 @@ export default function Cart({ isLoggedIn, userId }) {
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm sticky top-20">
             <h3 className="text-lg font-black text-slate-800 mb-6">Résumé de commande</h3>
 
-            <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
+            {/* shipping choice */}
+            <div className="mb-6">
+              <p className="font-bold text-slate-700 mb-2">Mode de livraison :</p>
+              <div className="flex flex-col space-y-2">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="shipping"
+                    value="pickup"
+                    checked={shippingMethod === 'pickup'}
+                    onChange={() => setShippingMethod('pickup')}
+                    className="form-radio"
+                  />
+                  Retrait (3800 Sherbrooke St E, Montréal)
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="shipping"
+                    value="delivery"
+                    checked={shippingMethod === 'delivery'}
+                    onChange={() => setShippingMethod('delivery')}
+                    className="form-radio"
+                  />
+                  Livraison
+                </label>
+              </div>
+            </div>
               <div className="flex justify-between">
                 <span className="text-slate-600 font-bold">Sous-total</span>
                 <span className="font-bold text-slate-900">${getTotalPrice().toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600 font-bold">Frais de port</span>
-                <span className="font-bold text-slate-900">$0.00</span>
+                <span className="font-bold text-slate-900">${shippingFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600 font-bold">Taxes</span>
                 <span className="font-bold text-slate-900">$0.00</span>
               </div>
-            </div>
 
             <div className="flex justify-between mb-6">
               <span className="text-lg font-black text-slate-900">Total</span>
-              <span className="text-2xl font-black text-blue-600">${getTotalPrice().toFixed(2)}</span>
+              <span className="text-2xl font-black text-blue-600">
+                ${(getTotalPrice() + shippingFee).toFixed(2)}
+              </span>
             </div>
 
+            {outOfStockInCart && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded-xl mb-4 text-sm font-bold">
+                Un ou plusieurs livres du panier sont épuisés et ne peuvent pas être achetés.
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-4 flex items-center gap-2 text-sm font-bold">
                 <FontAwesomeIcon icon={faExclamationTriangle} />
@@ -248,7 +343,7 @@ export default function Cart({ isLoggedIn, userId }) {
                 </div>
                 <button
                   onClick={handleCheckout}
-                  disabled={isProcessing || cartItems.length === 0}
+                  disabled={isProcessing || cartItems.length === 0 || outOfStockInCart}
                   className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-2xl font-black hover:from-emerald-500 hover:to-teal-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isProcessing ? (

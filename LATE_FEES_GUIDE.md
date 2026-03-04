@@ -187,6 +187,21 @@ Obtient les frais impayés d'un utilisateur.
 const unpaid = await databaseService.getUnpaidOverdueCharges(userId);
 ```
 
+### `addAdminFee(userId, amount, message?)`
+Permet à l'administrateur d'ajouter un frais arbitraire au compte d'un utilisateur.
+
+```javascript
+await databaseService.addAdminFee('user123', 15.00, 'Livre endommagé');
+```
+
+### `payAdminFees(userId)`
+Règle tous les frais administratifs en attente et enregistre un paiement.
+
+```javascript
+const result = await databaseService.payAdminFees(userId);
+// { totalPaid: 15, feesSettled: 2 }
+```
+
 ## Interface Utilisateur
 
 ### Page Dashboard

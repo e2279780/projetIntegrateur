@@ -4,6 +4,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import process from 'process';
+import nodemailer from 'nodemailer';
 
 const SEED_API_KEY = process.env.SEED_API_KEY || 'change-me-to-a-secure-key';
 
@@ -360,6 +361,84 @@ app.delete('/api/books/:id', async (req, res) => {
 });
 
 // ============= ROUTES EMPRUNT =============
+
+// POST /api/admin/fees - Ajouter un frais administratif à un utilisateur
+app.post('/api/admin/fees', async (req, res) => {
+  try {
+    let dbSvc;
+    try {
+      dbSvc = await import('./src/services/databaseService.js');
+    } catch (importErr) {
+      console.error('Erreur lors de l\'import du module:', importErr);
+      return res.status(500).json({ error: 'Erreur lors du chargement des services' });
+    }
+
+    const { userId: providedUserId, email: providedEmail, amount, message } = req.body;
+    if ((!providedUserId && !providedEmail) || typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ error: 'userId ou email et un montant valide sont requis' });
+    }
+
+    // Resolve userId if only email was provided
+    let resolvedUserId = providedUserId || null;
+    try {
+      if (!resolvedUserId && providedEmail) {
+        const found = await dbSvc.getUserByEmail(providedEmail);
+        if (found) resolvedUserId = found.id;
+      }
+    } catch (resolveErr) {
+      console.error('Erreur lors de la recherche de l\'utilisateur par email:', resolveErr);
+    }
+
+    await dbSvc.addAdminFee(resolvedUserId, amount, message || '', providedEmail || null);
+
+    // Try to notify the user by email. SMTP config via env vars:
+    // SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
+    try {
+      let userEmail = providedEmail || null;
+      if (!userEmail && resolvedUserId) {
+        try {
+          const user = await dbSvc.getUserById(resolvedUserId);
+          userEmail = user?.email || null;
+        } catch (e) {
+          userEmail = null;
+        }
+      }
+
+      const smtpHost = process.env.SMTP_HOST;
+      const smtpPort = process.env.SMTP_PORT;
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
+      const emailFrom = process.env.EMAIL_FROM || `no-reply@${req.hostname}`;
+
+      if (userEmail && smtpHost && smtpPort && smtpUser && smtpPass) {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: parseInt(smtpPort, 10),
+          secure: parseInt(smtpPort, 10) === 465,
+          auth: { user: smtpUser, pass: smtpPass }
+        });
+
+        const mailOptions = {
+          from: emailFrom,
+          to: userEmail,
+          subject: 'Nouveau frais administratif appliqué',
+          text: `Un nouveau frais de ${amount.toFixed(2)}$ a été ajouté à votre compte.${message ? '\n\nMessage: ' + message : ''}\n\nMerci,\nBiblioconnect`
+        };
+
+        await transporter.sendMail(mailOptions);
+      } else {
+        console.log('Notification email non envoyée (SMTP ou email manquant)', { userId, amount, message });
+      }
+    } catch (emailErr) {
+      console.error('Erreur lors de l\'envoi de l\'email de notification:', emailErr);
+    }
+
+    res.status(201).json({ success: true, message: 'Frais ajouté' });
+  } catch (err) {
+    console.error('Erreur lors de l\'ajout du frais administratif:', err);
+    res.status(400).json({ error: err.message || 'Erreur lors de l\'ajout du frais' });
+  }
+});
 
 // POST /api/borrows - Créer un emprunt
 app.post('/api/borrows', async (req, res) => {

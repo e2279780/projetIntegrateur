@@ -246,6 +246,7 @@ const calculateLateFees = (returnDueDate, returnDate = new Date()) => {
  */
 export const checkUserOutstandingCharges = async (userId) => {
   try {
+    // Check overdue borrows first
     const q = query(
       collection(db, 'borrows'),
       where('userId', '==', userId)
@@ -270,13 +271,102 @@ export const checkUserOutstandingCharges = async (userId) => {
       }
     });
 
+    // Also include any admin-added fees. We fetch by userId and (if available) by email
+    const adminFees = [];
+    try {
+      // First, fees tied to userId
+      const feesQuery = query(
+        collection(db, 'adminFees'),
+        where('userId', '==', userId),
+        where('paid', '==', false)
+      );
+      const feesSnapshot = await getDocs(feesQuery);
+      feesSnapshot.docs.forEach(doc => {
+        const fee = doc.data();
+        totalCharges += fee.amount || 0;
+        adminFees.push({
+          feeId: doc.id,
+          amount: fee.amount || 0,
+          message: fee.message || '',
+          email: fee.email || null,
+        });
+      });
+
+      // Also try to include admin fees matching the user's email (if the user exists)
+      let userEmail = null;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          userEmail = userDoc.data().email || null;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      if (userEmail) {
+        const feesByEmailQuery = query(
+          collection(db, 'adminFees'),
+          where('email', '==', userEmail),
+          where('paid', '==', false)
+        );
+        const feesByEmailSnapshot = await getDocs(feesByEmailQuery);
+        feesByEmailSnapshot.docs.forEach(doc => {
+          const fee = doc.data();
+          // avoid double counting fees already included
+          if (!adminFees.find(a => a.feeId === doc.id)) {
+            totalCharges += fee.amount || 0;
+            adminFees.push({
+              feeId: doc.id,
+              amount: fee.amount || 0,
+              message: fee.message || '',
+              email: fee.email || null,
+            });
+          }
+        });
+      }
+    } catch (errFees) {
+      console.error('Erreur lors de la récupération des frais administratifs:', errFees.message);
+    }
+
     return {
       hasOutstandingCharges: totalCharges > 0,
       totalCharges: Math.round(totalCharges * 100) / 100,
-      overdueBooks
+      overdueBooks,
+      adminFees
     };
   } catch (error) {
     console.error('Erreur lors de la vérification des frais en retard:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Ajouter un frais administratif pour un utilisateur
+ * @param {string} userId - ID de l'utilisateur
+ * @param {number} amount - montant en dollars
+ * @param {string} [message] - description optionnelle
+ * @returns {Promise<string>} ID du document créé
+ */
+export const addAdminFee = async (userId, amount, message = '', email = null) => {
+  try {
+    if ((!userId && !email) || typeof amount !== 'number' || amount <= 0) {
+      throw new Error('Paramètres invalides pour le frais administratif');
+    }
+
+    const payload = {
+      userId: userId || null,
+      email: email || null,
+      amount,
+      message: message || '',
+      paid: false,
+      createdAt: Timestamp.now(),
+    };
+
+    const docRef = await addDoc(collection(db, 'adminFees'), payload);
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout du frais administratif:', error.message);
     throw new Error(error.message);
   }
 };
@@ -492,25 +582,79 @@ export const payOverdueCharges = async (userId, borrowIds = []) => {
       }
     }
 
-    // Créer un enregistrement de paiement
-    const paymentRecord = await addDoc(collection(db, 'payments'), {
-      userId,
-      totalAmount: Math.round(totalPaid * 100) / 100,
-      borrowIds: borrowsToSettle,
-      paymentDate: Timestamp.now(),
-      type: 'late_fees',
-      status: 'completed',
-      createdAt: Timestamp.now(),
-    });
+    let paymentResult = null;
+    if (totalPaid > 0) {
+      // Créer un enregistrement de paiement
+      const paymentRecord = await addDoc(collection(db, 'payments'), {
+        userId,
+        totalAmount: Math.round(totalPaid * 100) / 100,
+        borrowIds: borrowsToSettle,
+        paymentDate: Timestamp.now(),
+        type: 'late_fees',
+        status: 'completed',
+        createdAt: Timestamp.now(),
+      });
+      paymentResult = paymentRecord.id;
+    }
 
     return {
-      paymentId: paymentRecord.id,
+      paymentId: paymentResult,
       totalPaid: Math.round(totalPaid * 100) / 100,
       borrowsSettled: borrowsToSettle.length,
       paymentDetails
     };
   } catch (error) {
     console.error('Erreur lors du paiement des frais:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Payer tous les frais administratifs en attente pour un utilisateur
+ * @param {string} userId
+ * @returns {Promise<Object>} { totalPaid: number, feesSettled: number }
+ */
+export const payAdminFees = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'adminFees'),
+      where('userId', '==', userId),
+      where('paid', '==', false)
+    );
+    const snapshot = await getDocs(q);
+    let totalPaid = 0;
+    const feeIds = [];
+
+    for (const docItem of snapshot.docs) {
+      const fee = docItem.data();
+      totalPaid += fee.amount || 0;
+      feeIds.push(docItem.id);
+      await updateDoc(doc(db, 'adminFees', docItem.id), {
+        paid: true,
+        paidAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+    }
+
+    if (feeIds.length > 0) {
+      // enregistrer le paiement
+      await addDoc(collection(db, 'payments'), {
+        userId,
+        totalAmount: Math.round(totalPaid * 100) / 100,
+        feeIds,
+        paymentDate: Timestamp.now(),
+        type: 'admin_fees',
+        status: 'completed',
+        createdAt: Timestamp.now(),
+      });
+    }
+
+    return {
+      totalPaid: Math.round(totalPaid * 100) / 100,
+      feesSettled: feeIds.length
+    };
+  } catch (error) {
+    console.error('Erreur lors du paiement des frais administratifs:', error.message);
     throw new Error(error.message);
   }
 };
@@ -682,6 +826,30 @@ export const getUserById = async (userId) => {
 };
 
 /**
+ * Récupérer un utilisateur par email (si existant)
+ * @param {string} email
+ * @returns {Promise<Object|null>} Données utilisateur ou null si introuvable
+ */
+export const getUserByEmail = async (email) => {
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('email', '==', email)
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.size === 0) return null;
+    const docSnap = snapshot.docs[0];
+    return {
+      id: docSnap.id,
+      ...docSnap.data(),
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'utilisateur par email:', error.message);
+    throw new Error(error.message);
+  }
+};
+
+/**
  * Mettre à jour un emprunt
  * @param {string} borrowId - ID de l'emprunt
  * @param {Object} updates - Données à mettre à jour
@@ -833,9 +1001,12 @@ export const getCardInfo = async (userId) => {
  * Effectuer un achat de livre
  * @param {string} userId - ID de l'utilisateur
  * @param {string} bookId - ID du livre
+ * @param {string} [shippingMethod] - 'pickup' ou 'delivery'
+ * @param {Date} [deliveryDate] - Date de livraison prévue (pour la méthode delivery)
+ * @param {number} [shippingFee] - Frais de livraison calculés
  * @returns {Promise<string>} ID de l'achat
  */
-export const purchaseBook = async (userId, bookId) => {
+export const purchaseBook = async (userId, bookId, shippingMethod = 'pickup', deliveryDate = null, shippingFee = 0) => {
   try {
     // Vérifier si l'utilisateur a une carte configurée
     const cardInfo = await getCardInfo(userId);
@@ -849,7 +1020,12 @@ export const purchaseBook = async (userId, bookId) => {
       throw new Error('Livre non trouvé');
     }
 
-    // Vérifier si l'utilisateur n'a pas déjà achetéce livre
+    // Vérifier qu'il reste du stock
+    if (book.availableCopies !== undefined && book.availableCopies <= 0) {
+      throw new Error('Ce livre est en rupture de stock');
+    }
+
+    // Vérifier si l'utilisateur n'a pas déjà acheté ce livre
     const q = query(
       collection(db, 'purchases'),
       where('userId', '==', userId),
@@ -861,8 +1037,8 @@ export const purchaseBook = async (userId, bookId) => {
       throw new Error('Vous avez déjà acheté ce livre');
     }
 
-    // Créer l'achat
-    const docRef = await addDoc(collection(db, 'purchases'), {
+    // Build purchase record
+    const purchaseRecord = {
       userId,
       bookId,
       bookTitle: book.title,
@@ -871,8 +1047,20 @@ export const purchaseBook = async (userId, bookId) => {
       bookCoverUrl: book.coverImageUrl || '',
       purchaseDate: Timestamp.now(),
       cardLastDigits: cardInfo.cardNumber,
-      status: 'completed',
+      status: shippingMethod === 'delivery' ? 'pending' : 'completed',
+      shippingMethod,
+      pickupAddress: shippingMethod === 'pickup' ? '3800 Sherbrooke St E, Montreal, Quebec H1X 2A2' : null,
+      deliveryDate: deliveryDate ? Timestamp.fromDate(deliveryDate) : null,
+      shippingFee: shippingFee || 0,
       createdAt: Timestamp.now(),
+    };
+
+    // Créer l'achat
+    const docRef = await addDoc(collection(db, 'purchases'), purchaseRecord);
+
+    // Réduire le stock disponible
+    await updateDoc(doc(db, 'books', bookId), {
+      availableCopies: (book.availableCopies || 1) - 1,
     });
 
     return docRef.id;

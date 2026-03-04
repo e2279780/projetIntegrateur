@@ -325,7 +325,7 @@ export default function BookCard({ book, isLoggedIn, onBorrow, userId }) {
                     onClick={handleAddToCart}
                     className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white w-11 h-11 rounded-xl hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 flex items-center justify-center active:scale-95"
                     title="Ajouter au panier"
-                    disabled={isLoading}
+                    disabled={isLoading || availableCopies <= 0}
                   >
                     <FontAwesomeIcon icon={faShoppingCart} />
                   </button>

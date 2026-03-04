@@ -10,6 +10,7 @@ export default function Frais({ isLoggedIn, userId }) {
   const [isPaid, setIsPaid] = useState(false);
   const [loading, setLoading] = useState(true);
   const [overdueCharges, setOverdueCharges] = useState([]);
+  const [adminFees, setAdminFees] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [error, setError] = useState('');
   const [cardInfo, setCardInfo] = useState(null);
@@ -24,13 +25,13 @@ export default function Frais({ isLoggedIn, userId }) {
           return;
         }
 
-        // Obtenir les frais en retard
+        // Obtenir les frais en retard et administratifs
         const charges = await databaseService.checkUserOutstandingCharges(userId);
         setTotalAmount(charges.totalCharges);
         
-        // Charger les détails des livres
+        // Charger les détails des livres pour les retards
         const chargesWithBooks = await Promise.all(
-          charges.overdueBooks.map(async (charge) => {
+          (charges.overdueBooks || []).map(async (charge) => {
             try {
               const book = await databaseService.getBookById(charge.bookId);
               return {
@@ -46,6 +47,7 @@ export default function Frais({ isLoggedIn, userId }) {
         );
         
         setOverdueCharges(chargesWithBooks);
+        setAdminFees(charges.adminFees || []);
 
         // Charger les informations de carte
         const card = await databaseService.getCardInfo(userId);
@@ -68,8 +70,9 @@ export default function Frais({ isLoggedIn, userId }) {
     setError('');
 
     try {
-      // Payer tous les frais en retard
+      // Payer tous les types de frais
       await databaseService.payOverdueCharges(userId);
+      await databaseService.payAdminFees(userId);
       setIsPaid(true);
       
       setTimeout(() => {
@@ -123,7 +126,7 @@ export default function Frais({ isLoggedIn, userId }) {
             <FontAwesomeIcon icon={faCheckCircle} className="text-4xl text-emerald-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-3">Paiement Réussi</h2>
-          <p className="text-slate-500 font-medium mb-8 leading-relaxed">Vos frais de retard ont été payés. Vous pouvez maintenant emprunter d'autres livres.</p>
+          <p className="text-slate-500 font-medium mb-8 leading-relaxed">Vos frais ont été payés. Vous pouvez maintenant emprunter d'autres livres.</p>
           <button onClick={() => navigate('/dashboard')} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">Retour au Dashboard</button>
         </div>
       </div>
@@ -148,7 +151,10 @@ export default function Frais({ isLoggedIn, userId }) {
             <h1 className="text-6xl font-black text-slate-900 italic uppercase tracking-tighter leading-none">
               Frais de <br/><span className="text-red-500 underline decoration-8 decoration-red-100">retard</span>
             </h1>
-            <p className="text-slate-500 mt-4 text-sm">Vous avez {overdueCharges.length} livre(s) en retard</p>
+            <p className="text-slate-500 mt-4 text-sm">
+            Vous avez {overdueCharges.length} livre(s) en retard
+            {adminFees.length > 0 && ` et ${adminFees.length} frais administratifs`}.
+          </p>
           </div>
 
           <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -178,7 +184,12 @@ export default function Frais({ isLoggedIn, userId }) {
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total à payer</span>
               <span className="text-4xl font-black text-red-600 leading-none">{totalAmount.toFixed(2)}$</span>
             </div>
-            <p className="text-xs text-slate-500 mt-4">À raison de 1,50$ par jour de retard</p>
+            <p className="text-xs text-slate-500 mt-4">
+              {adminFees.length > 0 ?
+                'Comprend des frais administratifs en plus des frais de retard.' :
+                'À raison de 1,50$ par jour de retard'
+              }
+            </p>
           </div>
         </div>
 

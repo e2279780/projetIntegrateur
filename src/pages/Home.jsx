@@ -98,10 +98,10 @@ export default function Home({ isLoggedIn, userId, onBorrow }) {
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* --- SIDEBAR GAUCHE --- */}
-          <aside className="w-full lg:w-80 shrink-0 space-y-6">
+          <aside className="w-full lg:w-80 shrink-0 space-y-6 self-start">
             
             {/* Menu Catégories Moderne */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 backdrop-blur-sm sticky top-28">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 backdrop-blur-sm">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                 <FontAwesomeIcon icon={faCompass} /> Découvrir
               </h3>

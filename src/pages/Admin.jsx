@@ -41,6 +41,9 @@ export default function Admin() {
   const [alertModal, setAlertModal] = useState({ isOpen: false, borrowId: null, userId: '', userName: '', bookTitle: '', email: '' });
   const [alertMessage, setAlertMessage] = useState('');
   const [showAddBookModal, setShowAddBookModal] = useState(false);
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [feeData, setFeeData] = useState({ userId: '', email: '', amount: 0, message: '' });
+  const [feeLoading, setFeeLoading] = useState(false);
   
   // États pour la recherche et filtres
   const [searchTerm, setSearchTerm] = useState(''); // Pour Inventaire
@@ -193,6 +196,52 @@ export default function Admin() {
   };
 
   // --- HANDLERS ---
+
+  const handleAddFee = async () => {
+    // basic validation: require either userId or email
+    if ((!feeData.userId || !feeData.userId.trim()) && (!feeData.email || !feeData.email.trim())) {
+      alert('Veuillez fournir un userId ou une adresse email valide');
+      return;
+    }
+    if (feeData.amount <= 0) {
+      alert('Veuillez fournir un montant positif');
+      return;
+    }
+    setFeeLoading(true);
+    try {
+      const resp = await fetch('/api/admin/fees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feeData),
+      });
+      // Parse response safely: accept JSON or plain text (some servers return HTML on errors)
+      let parsed = null;
+      try {
+        const ct = resp.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          parsed = await resp.json();
+        } else {
+          parsed = await resp.text();
+        }
+      } catch (parseErr) {
+        try { parsed = await resp.text(); } catch { parsed = null; }
+      }
+
+      if (!resp.ok) {
+        const serverMsg = parsed && typeof parsed === 'object' ? (parsed.error || parsed.message) : (typeof parsed === 'string' ? parsed : null);
+        throw new Error(serverMsg || `Erreur serveur (${resp.status})`);
+      }
+
+      alert('Frais ajouté avec succès');
+      setShowFeeModal(false);
+      setFeeData({ userId: '', email: '', amount: 0, message: '' });
+    } catch (err) {
+      console.error('Erreur lors de l\'ajout du frais', err);
+      alert('Échec de l\'ajout du frais : ' + (err.message || 'Erreur inconnue'));
+    } finally {
+      setFeeLoading(false);
+    }
+  };
 
   const handleSendAlert = async () => {
     if (!alertModal.borrowId || !alertMessage.trim()) {
@@ -359,6 +408,12 @@ export default function Admin() {
                 >
                   <FontAwesomeIcon icon={faPlusCircle} /> Ajouter un livre
                 </button>
+                <button 
+                  onClick={() => setShowFeeModal(true)}
+                  className="bg-yellow-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-yellow-700 transition"
+                >
+                  <FontAwesomeIcon icon={faDollarSign} /> Ajouter un frais
+                </button>
               </div>
             </div>
             
@@ -399,6 +454,7 @@ export default function Admin() {
                         </td>
                         <td className="px-8 py-6 font-bold text-slate-400">{item.minStock}</td>
                         <td className="px-8 py-6">
+                          <div className="flex flex-col sm:flex-row gap-2">
                           <button
                             onClick={async () => {
                               const qtyStr = window.prompt('Quantité à ajouter (nombre positif)');
@@ -425,6 +481,34 @@ export default function Admin() {
                           >
                             Réapprovisionner
                           </button>
+                          <button
+                            onClick={async () => {
+                              const qtyStr = window.prompt('Quantité à retirer (nombre positif)');
+                              if (!qtyStr) return;
+                              const qty = parseInt(qtyStr, 10);
+                              if (Number.isNaN(qty) || qty <= 0) return alert('Quantité invalide');
+                              if (qty > item.stock) return alert('Impossible de retirer plus que le stock actuel');
+
+                              try {
+                                const res = await fetch(`/api/books/${item.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ delta: -qty }),
+                                });
+                                const json = await res.json();
+                                if (!res.ok) throw new Error(json.error || 'Erreur');
+                                await fetchInventory();
+                                alert('Stock mis à jour');
+                              } catch (err) {
+                                console.error(err);
+                                alert('Erreur lors de la mise à jour du stock: ' + err.message);
+                              }
+                            }}
+                            className="text-red-600 font-black text-[10px] uppercase tracking-widest hover:underline"
+                          >
+                            Retirer
+                          </button>
+                        </div>
                         </td>
                       </tr>
                     ))
@@ -843,6 +927,82 @@ export default function Admin() {
               <button onClick={() => setShowAddBookModal(false)} disabled={addBookLoading} className="flex-1 bg-gray-300 hover:bg-gray-400 text-slate-800 px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition">Annuler</button>
               <button onClick={handleAddBookSubmit} disabled={addBookLoading} className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg">
                 {addBookLoading ? 'Ajout...' : <><FontAwesomeIcon icon={faPlusCircle} /> Ajouter le livre</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AJOUTER FRAIS */}
+      {showFeeModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-8 py-6 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <FontAwesomeIcon icon={faDollarSign} className="text-white text-lg" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">Ajouter un frais</h3>
+                  <p className="text-yellow-100 text-xs font-bold mt-1">Appliquer un montant à un utilisateur</p>
+                </div>
+              </div>
+              <button onClick={() => setShowFeeModal(false)} className="text-white hover:bg-white/20 p-2 rounded-lg transition">
+                <FontAwesomeIcon icon={faTimes} className="text-xl" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-8 py-8">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddFee(); }} className="space-y-7">
+                <div className="grid grid-cols-1 gap-6">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-600 mb-2 block tracking-wider">User ID (ou Email)</label>
+                    <input
+                      type="text"
+                      value={feeData.userId}
+                      onChange={(e) => setFeeData({ ...feeData, userId: e.target.value })}
+                      className="w-full bg-white border-2 border-yellow-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition"
+                      placeholder="user123"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-600 mb-2 block tracking-wider">Email (optionnel, utilisé si fourni)</label>
+                    <input
+                      type="email"
+                      value={feeData.email}
+                      onChange={(e) => setFeeData({ ...feeData, email: e.target.value })}
+                      className="w-full bg-white border-2 border-yellow-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition"
+                      placeholder="utilisateur@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-600 mb-2 block tracking-wider">Montant ($) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={feeData.amount}
+                      onChange={(e) => setFeeData({ ...feeData, amount: parseFloat(e.target.value) })}
+                      className="w-full bg-white border-2 border-yellow-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-600 mb-2 block tracking-wider">Message (optionnel)</label>
+                    <input
+                      type="text"
+                      value={feeData.message}
+                      onChange={(e) => setFeeData({ ...feeData, message: e.target.value })}
+                      className="w-full bg-white border-2 border-yellow-200 rounded-lg px-4 py-2.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition"
+                    />
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-gray-50 border-t-2 border-gray-200 px-8 py-4 flex gap-3">
+              <button onClick={() => setShowFeeModal(false)} disabled={feeLoading} className="flex-1 bg-gray-300 hover:bg-gray-400 text-slate-800 px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition">Annuler</button>
+              <button onClick={handleAddFee} disabled={feeLoading} className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg">
+                {feeLoading ? 'Ajout...' : <><FontAwesomeIcon icon={faDollarSign} /> Ajouter le frais</>}
               </button>
             </div>
           </div>

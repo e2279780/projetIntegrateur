@@ -34,6 +34,10 @@ npm run dev
 
 - `POST /api/seed` — initialise les données dans Firestore (optionnel)
   - Protégé par clé API: envoyer l'en-tête `x-api-key: <VOTRE_CLÉ>` ou `?apiKey=<VOTRE_CLÉ>`.
+
+- `POST /api/admin/fees` — permet à l'administrateur d'ajouter un montant arbitraire sur le compte d'un utilisateur
+  - Corps JSON: `{ userId: string, amount: number, message?: string }`
+  - Utilisé par l'interface Admin pour facturer des frais (par exemple pour dommage ou autres pénalités).
   - Par défaut la clé attendue est la valeur de la variable d'environnement `SEED_API_KEY` ou `change-me-to-a-secure-key` si non fournie.
   - Le seed utilise les fonctions définies dans `src/seedBooks.js` et nécessite la configuration Firebase (voir plus bas).
 
@@ -74,6 +78,26 @@ Puis appeler `/api/seed` avec la clé dans l'en-tête `x-api-key`.
 - Les données servies par l'API (hors `/api/seed`) proviennent d'un fichier statique `src/booksData.js` pour éviter de charger Firebase au démarrage.
 - Pour la production, remplacez la valeur par défaut de `SEED_API_KEY` par une clé sécurisée et stockez-la dans vos secrets d'environnement.
 - Vous pouvez étendre l'API (tri, filtres plus avancés, authentification) si nécessaire.
+
+## Notifications par email (optionnel)
+
+L'API peut envoyer un email à l'utilisateur lorsqu'un administrateur ajoute un frais. Pour activer l'envoi d'emails, fournissez les variables d'environnement SMTP suivantes avant de démarrer `server.js`:
+
+```bash
+export SMTP_HOST="smtp.example.com"
+export SMTP_PORT="587"
+export SMTP_USER="smtp-username"
+export SMTP_PASS="smtp-password"
+export EMAIL_FROM="Biblioconnect <no-reply@example.com>"
+# sous Windows PowerShell:
+$env:SMTP_HOST = "smtp.example.com"
+$env:SMTP_PORT = "587"
+$env:SMTP_USER = "smtp-username"
+$env:SMTP_PASS = "smtp-password"
+$env:EMAIL_FROM = "Biblioconnect <no-reply@example.com>"
+```
+
+Si ces variables ne sont pas définies, l'API créera le document de frais dans Firestore mais n'enverra pas d'email (elle consignera l'événement dans les logs).
 
 Si vous voulez, je peux:
 - ajouter un endpoint listant les catégories disponibles,
