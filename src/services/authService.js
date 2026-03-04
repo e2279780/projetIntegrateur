@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth, db } from '../firebase.js';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
@@ -185,6 +186,14 @@ export const getCurrentUserProfile = async (userId) => {
   }
 };
 
+  export const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      throw new Error(error.message || "Impossible d'envoyer l'email de réinitialisation");
+    }
+  };
+
 // --- CRUCIAL : Exportation de l'objet authService pour correspondre à tes composants ---
 export const authService = {
   signup,
@@ -195,4 +204,5 @@ export const authService = {
   signupWithGoogle,
   onAuthChange,
   getCurrentUserProfile,
+  resetPassword,
 };

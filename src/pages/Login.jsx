@@ -48,6 +48,23 @@ export default function Login({ onLogin }) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError('');
+    const emailField = document.querySelector('input[name="email"]');
+    const prefilled = emailField ? emailField.value : '';
+    const email = prefilled || window.prompt('Entrez votre adresse courriel pour recevoir le lien de réinitialisation :');
+    if (!email) return;
+    setLoading(true);
+    try {
+      await authService.resetPassword(email);
+      window.alert('Un email de réinitialisation a été envoyé à ' + email + '.');
+    } catch (err) {
+      setError(err.message || "Impossible d'envoyer l'email de réinitialisation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900 relative overflow-hidden">
       {/* Effets d'arrière-plan */}
@@ -100,6 +117,7 @@ export default function Login({ onLogin }) {
                 <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">Mot de passe</label>
                 <button 
                   type="button" 
+                  onClick={handleForgotPassword}
                   className="text-xs font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent hover:opacity-80 transition"
                 >
                   Oublié ?
